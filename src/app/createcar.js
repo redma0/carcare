@@ -1,8 +1,11 @@
+// CreateCar.js
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
+import "./CreateCar.css";
 
-export default function CreateCar() {
-  const [carData, setCarData] = useState({
+function CreateCar({ onCarCreated }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [formData, setFormData] = useState({
     make: "",
     model: "",
     year: "",
@@ -10,107 +13,79 @@ export default function CreateCar() {
     lastServiced: "",
   });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      const response = await fetch("/api/cars", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(carData),
-      });
-
-      if (response.ok) {
-        // Clear form after successful submission
-        setCarData({
-          make: "",
-          model: "",
-          year: "",
-          kilometers: "",
-          lastServiced: "",
-        });
-        alert("Car added successfully!");
-      }
-    } catch (error) {
-      console.error("Error adding car:", error);
-    }
+    onCarCreated(formData);
+    setFormData({
+      make: "",
+      model: "",
+      year: "",
+      kilometers: "",
+      lastServiced: "",
+    });
+    setIsOpen(false);
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCarData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
-      <h2 className="text-2xl font-bold mb-6">Add New Car</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Make:</label>
+    <div className="create-car-container">
+      <button className="toggle-form-btn" onClick={() => setIsOpen(!isOpen)}>
+        {isOpen ? "Close Form" : "Add New Car"}
+      </button>
+
+      {isOpen && (
+        <form onSubmit={handleSubmit} className="create-car-form">
           <input
             type="text"
             name="make"
-            value={carData.make}
+            value={formData.make}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            placeholder="Make"
             required
           />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Model:</label>
           <input
             type="text"
             name="model"
-            value={carData.model}
+            value={formData.model}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            placeholder="Model"
             required
           />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Year:</label>
           <input
             type="number"
             name="year"
-            value={carData.year}
+            value={formData.year}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            placeholder="Year"
             required
           />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Kilometers:</label>
           <input
             type="number"
             name="kilometers"
-            value={carData.kilometers}
+            value={formData.kilometers}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            placeholder="Kilometers"
             required
           />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Last Serviced:</label>
           <input
             type="date"
             name="lastServiced"
-            value={carData.lastServiced}
+            value={formData.lastServiced}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            placeholder="Last Serviced Date"
             required
           />
-        </div>
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-        >
-          Add Car
-        </button>
-      </form>
+          <button type="submit">Add Car</button>
+        </form>
+      )}
     </div>
   );
 }
+
+export default CreateCar;

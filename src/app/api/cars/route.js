@@ -57,3 +57,56 @@ export async function POST(request) {
     );
   }
 }
+// Add this to src/app/api/cars/route.js alongside GET and POST
+// src/app/api/cars/route.js
+// src/app/api/cars/route.js
+export async function PUT(request) {
+  try {
+    const body = await request.json();
+    const { id, kilometers, lastServiced } = body;
+
+    const conn = await get_db_connection();
+
+    let setClause = [];
+    let values = [];
+    let paramCount = 1;
+
+    if (kilometers !== undefined) {
+      setClause.push(
+        `kilometers = $${paramCount}, kilometers_updated_at = CURRENT_TIMESTAMP`
+      );
+      values.push(kilometers);
+      paramCount++;
+    }
+
+    if (lastServiced !== undefined) {
+      setClause.push(`last_serviced = $${paramCount}`);
+      values.push(lastServiced);
+      paramCount++;
+    }
+
+    values.push(id);
+
+    const query = `
+      UPDATE cars 
+      SET ${setClause.join(", ")}
+      WHERE id = $${paramCount}
+      RETURNING *, kilometers_updated_at;
+    `;
+
+    const result = await conn.query(query, values);
+    await conn.end();
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: "Car not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error updating car:", error);
+    return NextResponse.json(
+      { error: "Failed to update car" },
+      { status: 500 }
+    );
+  }
+}
