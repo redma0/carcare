@@ -1,7 +1,6 @@
-// CreateCar.js
 "use client";
 import React, { useState } from "react";
-import "./CreateCar.css";
+import "./createcar.css";
 
 function CreateCar({ onCarCreated }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,6 +10,8 @@ function CreateCar({ onCarCreated }) {
     year: "",
     kilometers: "",
     lastServiced: "",
+    fuelType: "diesel",
+    fuelEconomy: "", // new field
   });
 
   const handleSubmit = (e) => {
@@ -22,6 +23,8 @@ function CreateCar({ onCarCreated }) {
       year: "",
       kilometers: "",
       lastServiced: "",
+      fuelType: "diesel",
+      fuelEconomy: "",
     });
     setIsOpen(false);
   };
@@ -78,9 +81,32 @@ function CreateCar({ onCarCreated }) {
             name="lastServiced"
             value={formData.lastServiced}
             onChange={handleChange}
-            placeholder="Last Serviced Date"
             required
           />
+          <select
+            name="fuelType"
+            value={formData.fuelType}
+            onChange={handleChange}
+            required
+            className="fuel-select"
+          >
+            <option value="diesel">Diesel</option>
+            <option value="95">95 Octane</option>
+            <option value="lpg">LPG</option>
+          </select>
+          <div className="economy-input-group">
+            <input
+              type="number"
+              name="fuelEconomy"
+              value={formData.fuelEconomy}
+              onChange={handleChange}
+              placeholder="Fuel Economy"
+              step="0.1"
+              min="0"
+              required
+            />
+            <span className="economy-unit">L/100km</span>
+          </div>
           <button type="submit">Add Car</button>
         </form>
       )}

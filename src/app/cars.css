@@ -152,4 +152,136 @@
     color: #888;
     margin-left: 4px;
   }
+  /* Add these to your existing CSS while keeping all previous styles */
+.monthly-usage {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 4px;
+    padding: 4px 8px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  
+  .update-date {
+    color: #888;
+    font-size: 0.8rem;
+    margin-left: 8px;
+  }
+  
+  /* Add to your existing CSS */
+.car-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .delete-car-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 8px;
+    line-height: 1;
+  }
+  
+  .delete-car-btn:hover {
+    color: #c82333;
+  }
+  
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background-color: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    width: 90%;
+  }
+  
+  .modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #dc3545;
+  }
+  
+  .modal-content p {
+    margin-bottom: 24px;
+    color: #333;
+  }
+  
+  .modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+  
+  .modal-buttons .delete-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .modal-buttons .delete-btn:hover {
+    background-color: #c82333;
+  }
+  
+  .modal-buttons .cancel-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .modal-buttons .cancel-btn:hover {
+    background-color: #5a6268;
+  }
+  .monthly-usage {
+    color: #28a745;
+    font-weight: bold;
+  }
+  
+  .no-data {
+    color: #6c757d;
+    font-style: italic;
+  }
+  .fuel-type {
+    color: #007bff;
+    font-weight: 500;
+  }
+  .fuel-economy {
+    color: #28a745;
+    font-weight: 500;
+  }
+  .monthly-cost {
+    color: #dc3545;
+    font-weight: bold;
+    padding: 2px 6px;
+    background-color: #fff5f5;
+    border-radius: 4px;
+  }
+  
+  .no-data {
+    color: #6c757d;
+    font-style: italic;
+  }
   

@@ -57,4 +57,60 @@
   .create-car-form button:hover {
     background-color: #218838;
   }
+  /* Add to existing CreateCar.css */
+.fuel-type-select {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  
+  .fuel-type-select:hover {
+    border-color: #b3b3b3;
+  }
+  
+  .fuel-type-select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+  }
+  /* Add to existing CSS */
+.fuel-select {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+  }
+  
+  .fuel-select:focus {
+    outline: none;
+    border-color: #007bff;
+  }
+  /* Add to existing CSS */
+.economy-input-group {
+    position: relative;
+    margin-bottom: 10px;
+  }
+  
+  .economy-input-group input {
+    padding-right: 70px; /* Make room for the unit label */
+    margin-bottom: 0;
+  }
+  
+  .economy-unit {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-size: 0.9rem;
+  }
   

@@ -1,5 +1,4 @@
 "use client";
-// src/app/cars.js
 import { useState } from "react";
 import "./cars.css";
 
@@ -7,6 +6,7 @@ function Cars({ cars, onUpdate }) {
   const [editingId, setEditingId] = useState(null);
   const [editField, setEditField] = useState(null);
   const [editValue, setEditValue] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const calculateServiceDue = (lastServicedDate) => {
     const oneYear = 365;
@@ -23,24 +23,6 @@ function Cars({ cars, onUpdate }) {
       daysLeft: daysUntilService,
       nextServiceDate: nextService.toLocaleDateString(),
       isOverdue: daysUntilService < 0,
-    };
-  };
-
-  const calculateMonthlyKilometers = (kilometers, kilometersUpdatedAt) => {
-    if (!kilometersUpdatedAt) return "No data available";
-
-    const updateDate = new Date(kilometersUpdatedAt);
-    const today = new Date();
-    const monthsDiff =
-      (today.getFullYear() - updateDate.getFullYear()) * 12 +
-      (today.getMonth() - updateDate.getMonth());
-
-    if (monthsDiff < 1) return "Less than 1 month of data";
-
-    const monthlyAverage = Math.round(kilometers / monthsDiff);
-    return {
-      average: monthlyAverage,
-      months: monthsDiff,
     };
   };
 
@@ -84,20 +66,74 @@ function Cars({ cars, onUpdate }) {
     setEditValue("");
   };
 
+  const handleDeleteClick = (car) => {
+    setDeleteConfirm(car);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      const response = await fetch("/api/cars", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: deleteConfirm.id }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete car");
+      }
+
+      setDeleteConfirm(null);
+      onUpdate();
+    } catch (error) {
+      console.error("Error deleting car:", error);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm(null);
+  };
+
   return (
     <div className="cars-container">
+      {deleteConfirm && (
+        <div className="modal-backdrop">
+          <div className="modal-content">
+            <h3>Delete Car</h3>
+            <p>
+              Are you sure you want to delete the {deleteConfirm.make}{" "}
+              {deleteConfirm.model}?
+            </p>
+            <div className="modal-buttons">
+              <button onClick={handleDeleteConfirm} className="delete-btn">
+                Delete
+              </button>
+              <button onClick={handleDeleteCancel} className="cancel-btn">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {cars.map((car) => {
         const serviceStatus = calculateServiceDue(car.last_serviced);
-        const monthlyKilometers = calculateMonthlyKilometers(
-          car.kilometers,
-          car.kilometers_updated_at
-        );
 
         return (
           <div key={car.id} className="car-card">
-            <h3>
-              {car.make} {car.model}
-            </h3>
+            <div className="car-card-header">
+              <h3>
+                {car.make} {car.model}
+              </h3>
+              <button
+                onClick={() => handleDeleteClick(car)}
+                className="delete-car-btn"
+              >
+                ×
+              </button>
+            </div>
+
             <div className="car-details">
               <p className="car-detail-item">Year: {car.year}</p>
 
@@ -134,15 +170,46 @@ function Cars({ cars, onUpdate }) {
                     </span>
                   )}
                 </p>
-                {typeof monthlyKilometers === "object" && (
-                  <p className="monthly-average">
-                    Average: {monthlyKilometers.average} km/month
-                    <span className="data-period">
-                      (over {monthlyKilometers.months} months)
-                    </span>
+                {car.monthly_usage !== null && (
+                  <p className="monthly-usage">
+                    Average: {Math.round(car.monthly_usage)} km/month
                   </p>
                 )}
               </div>
+
+              <div className="car-detail-item">
+                <p>
+                  Fuel Type:{" "}
+                  <span className="fuel-type">
+                    {car.fuel_type.charAt(0).toUpperCase() +
+                      car.fuel_type.slice(1)}
+                  </span>
+                </p>
+              </div>
+
+              <div className="car-detail-item">
+                <p>
+                  Fuel Economy:{" "}
+                  <span className="fuel-economy">
+                    {car.fuel_economy} L/100km
+                  </span>
+                </p>
+              </div>
+
+              {car.monthly_fuel_cost && (
+                <div className="car-detail-item">
+                  <p>
+                    Monthly Fuel Cost:{" "}
+                    <span className="monthly-cost">
+                      {Number(car.monthly_fuel_cost).toLocaleString("sr-RS", {
+                        style: "currency",
+                        currency: "RSD",
+                        maximumFractionDigits: 0,
+                      })}
+                    </span>
+                  </p>
+                </div>
+              )}
 
               <div className="car-detail-item">
                 <p>
