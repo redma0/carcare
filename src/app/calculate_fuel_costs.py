@@ -1,14 +1,20 @@
 # src/app/calculate_fuel_costs.py
 import psycopg2
 from decimal import Decimal
+import os
+from dotenv import load_dotenv
 
 def calculate_and_store_fuel_costs():
+    # Load environment variables from .env.local
+    load_dotenv('.env.local')
+    
+    # Get database parameters from environment variables
     db_params = {
-        "host": "localhost",
-        "port": "5432",
-        "database": "postgres",
-        "user": "postgres",
-        "password": "riyad2003"
+        "host": os.getenv('POSTGRES_HOST'),
+        "port": os.getenv('POSTGRES_PORT'),
+        "database": os.getenv('POSTGRES_DB'),
+        "user": os.getenv('POSTGRES_USER'),
+        "password": os.getenv('POSTGRES_PASSWORD')
     }
 
     try:
