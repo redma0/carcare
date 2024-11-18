@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Cars from "./cars";
 import CreateCar from "./createcar";
 import FuelPrices from "./fuelprices";
+import ModelViewer from "./components/ModelViewer";
 
 function Page() {
   const [cars, setCars] = useState([]);
@@ -64,6 +65,13 @@ function Page() {
       <FuelPrices />
       <CreateCar onCarCreated={handleCarCreated} />
       <Cars cars={cars} onUpdate={handleRefresh} />
+      <div className="w-full max-w-7xl mx-auto p-5">
+        <div className="w-1/3">
+          {" "}
+          {/* This makes it take up 1/3 of the width */}
+          <ModelViewer />
+        </div>
+      </div>
     </main>
   );
 }
