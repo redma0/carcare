@@ -19,6 +19,7 @@ export async function POST(request) {
       fuelType,
       fuelEconomy,
       registrationExpires,
+      lastOilChange,
     } = body;
 
     const conn = await get_db_connection();
@@ -33,9 +34,10 @@ export async function POST(request) {
         initial_kilometers,
         fuel_type,
         fuel_economy,
-        registration_expires
+        registration_expires,
+        last_oil_change
       )
-      VALUES ($1, $2, $3, $4, $5, NULL, $4, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, NULL, $4, $6, $7, $8, $9)
       RETURNING *,
         CASE 
           WHEN kilometers_updated_at IS NOT NULL THEN
@@ -54,6 +56,7 @@ export async function POST(request) {
       fuelType,
       fuelEconomy,
       registrationExpires,
+      lastOilChange,
     ]);
     const newCar = result.rows[0];
     await conn.end();
@@ -95,6 +98,7 @@ export async function GET() {
         fuel_economy,
         monthly_fuel_cost,
         registration_expires,
+        last_oil_change,
         CASE 
           WHEN kilometers_updated_at IS NOT NULL THEN
             CAST((kilometers - initial_kilometers)::float / 
@@ -122,7 +126,7 @@ export async function GET() {
 export async function PUT(request) {
   const conn = await get_db_connection();
   try {
-    const { id, kilometers, lastServiced, registrationExpires } =
+    const { id, kilometers, lastServiced, registrationExpires, lastOilChange } =
       await request.json();
 
     // Start transaction
@@ -130,7 +134,7 @@ export async function PUT(request) {
 
     // Get current car data
     const currentCarData = await conn.query(
-      `SELECT kilometers, last_serviced, registration_expires, fuel_type, fuel_economy 
+      `SELECT kilometers, last_serviced, registration_expires, last_oil_change, fuel_type, fuel_economy 
        FROM cars WHERE id = $1`,
       [id]
     );
@@ -255,6 +259,29 @@ export async function PUT(request) {
           currentCar.registration_expires,
           registrationExpires,
         ]
+      );
+    } else if (lastOilChange) {
+      // Update oil change kilometer reading
+      const updateResult = await conn.query(
+        `
+        UPDATE cars 
+        SET last_oil_change = $1
+        WHERE id = $2
+        RETURNING *`,
+        [lastOilChange, id]
+      );
+
+      // Log oil change update
+      await conn.query(
+        `
+        INSERT INTO car_updates (
+          car_id,
+          update_type,
+          previous_value,
+          new_value,
+          update_timestamp
+        ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+        [id, "oil_change", currentCar.last_oil_change, lastOilChange]
       );
     }
 

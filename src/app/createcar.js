@@ -13,6 +13,7 @@ function CreateCar({ onCarCreated }) {
     fuelType: "diesel",
     fuelEconomy: "",
     registrationExpires: "",
+    lastOilChange: "",
   });
 
   const handleSubmit = (e) => {
@@ -78,6 +79,17 @@ function CreateCar({ onCarCreated }) {
             placeholder="Kilometers"
             required
           />
+          <div className="form-group">
+            <label>Last Oil Change (km)</label>
+            <input
+              type="number"
+              name="lastOilChange"
+              value={formData.lastOilChange}
+              onChange={handleChange}
+              placeholder="Kilometers at Last Oil Change"
+              required
+            />
+          </div>
           <div className="form-group">
             <label>Last Service</label>
             <input

@@ -34,7 +34,9 @@ function Cars({ cars, onUpdate }) {
         ? car.kilometers
         : field === "lastServiced"
         ? car.last_serviced
-        : car.registration_expires
+        : field === "registrationExpires"
+        ? car.registration_expires
+        : car.last_oil_change
     );
   };
 
@@ -44,8 +46,12 @@ function Cars({ cars, onUpdate }) {
         id: id,
         [editField === "registrationExpires"
           ? "registrationExpires"
+          : editField === "lastOilChange"
+          ? "lastOilChange"
           : editField]:
-          editField === "kilometers" ? parseInt(editValue) : editValue,
+          editField === "kilometers" || editField === "lastOilChange"
+            ? parseInt(editValue)
+            : editValue,
       };
 
       const response = await fetch("/api/cars", {
@@ -115,6 +121,19 @@ function Cars({ cars, onUpdate }) {
       isExpired: daysUntilExpiry < 0,
     };
   };
+  const calculateOilChangeDue = (lastOilChangeKm, currentKm) => {
+    const oilChangeInterval = 15000;
+    const lastOilChange = lastOilChangeKm || 0;
+
+    const kmSinceOilChange = currentKm - lastOilChangeKm;
+    const kmUntilOilChange = oilChangeInterval - kmSinceOilChange;
+
+    return {
+      kmLeft: kmUntilOilChange,
+      nextOilChangeKm: lastOilChangeKm + oilChangeInterval,
+      isOverdue: kmUntilOilChange < 0,
+    };
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
@@ -142,6 +161,10 @@ function Cars({ cars, onUpdate }) {
         const serviceStatus = calculateServiceDue(car.last_serviced);
         const registrationStatus = calculateRegistrationDue(
           car.registration_expires
+        );
+        const oilChangeStatus = calculateOilChangeDue(
+          car.last_oil_change,
+          car.kilometers
         );
 
         return (
@@ -244,6 +267,64 @@ function Cars({ cars, onUpdate }) {
                   </div>
                 </div>
               )}
+              <div className="value-box">
+                <div
+                  className={`flex flex-col ${
+                    oilChangeStatus.kmLeft > 5000
+                      ? "text-success"
+                      : oilChangeStatus.kmLeft > 1000
+                      ? "text-warning"
+                      : "text-danger"
+                  }`}
+                >
+                  <span className="text-gray-600">Oil Change</span>
+                  {editingId === car.id && editField === "lastOilChange" ? (
+                    <span className="edit-field">
+                      <input
+                        type="number"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        className="edit-input"
+                        placeholder="Kilometers at Oil Change"
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => handleSave(car.id)}
+                          className="save-btn"
+                        >
+                          Save
+                        </button>
+                        <button onClick={handleCancel} className="cancel-btn">
+                          Cancel
+                        </button>
+                      </div>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      Last changed at:{" "}
+                      {car.last_oil_change
+                        ? car.last_oil_change.toLocaleString()
+                        : "0"}{" "}
+                      km
+                      <button
+                        onClick={() => handleEdit(car, "lastOilChange")}
+                        className="edit-btn"
+                      >
+                        Edit
+                      </button>
+                    </span>
+                  )}
+                  <span>
+                    Next at: {oilChangeStatus.nextOilChangeKm.toLocaleString()}{" "}
+                    km
+                  </span>
+                  <span className="text-sm">
+                    {oilChangeStatus.isOverdue
+                      ? `Overdue by ${Math.abs(oilChangeStatus.kmLeft)} km`
+                      : `${oilChangeStatus.kmLeft} km remaining`}
+                  </span>
+                </div>
+              </div>
 
               <div className="value-box">
                 <div className="flex flex-col">
