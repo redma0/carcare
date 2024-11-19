@@ -116,19 +116,20 @@ export async function GET() {
 }
 
 export async function PUT(request) {
+  const conn = await get_db_connection();
   try {
-    const { id, kilometers } = await request.json();
-    const conn = await get_db_connection();
+    const { id, kilometers, lastServiced } = await request.json();
 
-    // First get the car's current data
-    const carResult = await conn.query(
-      `
-      SELECT fuel_type, fuel_economy
-      FROM cars
-      WHERE id = $1
-    `,
+    // Start transaction
+    await conn.query("BEGIN");
+
+    // Get current car data
+    const currentCarData = await conn.query(
+      `SELECT kilometers, last_serviced, fuel_type, fuel_economy 
+       FROM cars WHERE id = $1`,
       [id]
     );
+    const currentCar = currentCarData.rows[0];
 
     // Get current fuel prices
     const fuelResult = await conn.query(`
@@ -137,13 +138,11 @@ export async function PUT(request) {
       ORDER BY timestamp DESC
       LIMIT 1
     `);
-
-    const car = carResult.rows[0];
     const fuelPrices = fuelResult.rows[0];
 
-    // Get the appropriate fuel price based on fuel type
+    // Determine fuel price
     let fuelPrice;
-    switch (car.fuel_type.toLowerCase()) {
+    switch (currentCar.fuel_type.toLowerCase()) {
       case "95":
         fuelPrice = fuelPrices.price_95;
         break;
@@ -157,46 +156,104 @@ export async function PUT(request) {
         fuelPrice = fuelPrices.price_95;
     }
 
-    // Update car with new kilometers and calculate monthly fuel cost
-    const query = `
-      UPDATE cars 
-      SET 
-        kilometers = $1,
-        kilometers_updated_at = CURRENT_TIMESTAMP,
-        monthly_fuel_cost = (
-          ($1 - initial_kilometers)::float / 
-          GREATEST(1, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - kilometers_updated_at)) / (30 * 24 * 60 * 60))
-        ) * ($2::float / 100) * $3::float
-      WHERE id = $4
-      RETURNING *,
+    if (kilometers) {
+      // Calculate values for car_updates
+      const kilometersDriven = kilometers - currentCar.kilometers;
+      const fuelCostForUpdate =
+        (kilometersDriven / 100) * currentCar.fuel_economy * fuelPrice;
+
+      // Update car
+      const updateResult = await conn.query(
+        `
+        UPDATE cars 
+        SET kilometers = $1,
+            kilometers_updated_at = CURRENT_TIMESTAMP,
+            monthly_fuel_cost = (
+              ($1 - initial_kilometers)::float / 
+              GREATEST(1, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - kilometers_updated_at)) / (30 * 24 * 60 * 60))
+            ) * ($2::float / 100) * $3::float
+        WHERE id = $4
+        RETURNING *`,
+        [kilometers, currentCar.fuel_economy, fuelPrice, id]
+      );
+
+      // Log update in car_updates
+      await conn.query(
+        `
+        INSERT INTO car_updates (
+          car_id,
+          update_type,
+          previous_value,
+          new_value,
+          kilometers_driven,
+          fuel_cost_for_update,
+          fuel_price_at_update,
+          update_timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)`,
+        [
+          id,
+          "kilometers",
+          currentCar.kilometers,
+          kilometers,
+          kilometersDriven,
+          fuelCostForUpdate,
+          fuelPrice,
+        ]
+      );
+    } else if (lastServiced) {
+      // Update car service date
+      const updateResult = await conn.query(
+        `
+        UPDATE cars 
+        SET last_serviced = $1
+        WHERE id = $2
+        RETURNING *`,
+        [lastServiced, id]
+      );
+
+      // Log service update
+      await conn.query(
+        `
+        INSERT INTO car_updates (
+          car_id,
+          update_type,
+          previous_value,
+          new_value,
+          update_timestamp
+        ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+        [id, "service", currentCar.last_serviced, lastServiced]
+      );
+    }
+
+    // Commit transaction
+    await conn.query("COMMIT");
+
+    // Get updated car data
+    const result = await conn.query(
+      `
+      SELECT *, 
         CASE 
           WHEN kilometers_updated_at IS NOT NULL THEN
             (kilometers - initial_kilometers)::float / 
             GREATEST(1, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - kilometers_updated_at)) / (30 * 24 * 60 * 60))
           ELSE NULL
-        END as monthly_usage;
-    `;
-
-    const result = await conn.query(query, [
-      kilometers,
-      car.fuel_economy,
-      fuelPrice,
-      id,
-    ]);
-
-    await conn.end();
-
-    if (result.rows.length === 0) {
-      return NextResponse.json({ error: "Car not found" }, { status: 404 });
-    }
+        END as monthly_usage
+      FROM cars 
+      WHERE id = $1`,
+      [id]
+    );
 
     return NextResponse.json(result.rows[0]);
   } catch (error) {
+    // Rollback on error
+    await conn.query("ROLLBACK");
     console.error("Error updating car:", error);
     return NextResponse.json(
       { error: "Failed to update car" },
       { status: 500 }
     );
+  } finally {
+    await conn.end();
   }
 }
 

@@ -261,7 +261,11 @@ function Cars({ cars, onUpdate }) {
               <div className="value-box">
                 <div
                   className={`flex flex-col ${
-                    serviceStatus.isOverdue ? "text-red-600" : ""
+                    serviceStatus.daysLeft > 90
+                      ? "text-success"
+                      : serviceStatus.daysLeft > 30
+                      ? "text-warning"
+                      : "text-danger"
                   }`}
                 >
                   <span className="text-gray-600">Next Service</span>

@@ -1,6 +1,7 @@
 /* Modal Styles */
 :root {
-  --success: #10b981;
+  --success: #86C232;
+  --warning: #FFA500;
   --danger: #ef4444;
 }
 .modal-backdrop {
@@ -66,12 +67,12 @@
 }
 
 .value-box {
-  background-color: var(--white);
-  padding: 1.25rem;
-  border-radius: 1rem;
-  margin-bottom: 1.25rem;
-  box-shadow: var(--shadow);
-  transition: transform 0.2s;
+  background-color: var(--bg-dark);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s;
 }
 
 .value-box:hover {
@@ -125,7 +126,23 @@
   font-weight: 500;
 }
 
+.text-warning {
+  color: var(--warning);
+  font-weight: 500;
+}
+
 .text-danger {
   color: var(--danger);
   font-weight: 500;
+}
+.text-success .value-box {
+  border-left: 4px solid var(--success);
+}
+
+.text-warning .value-box {
+  border-left: 4px solid var(--warning);
+}
+
+.text-danger .value-box {
+  border-left: 4px solid var(--danger);
 }

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Cars from "./cars";
 import CreateCar from "./createcar";
 import FuelPrices from "./fuelprices";
+import UsageStatistics from "./UsageStatistics";
 
 function Page() {
   const [cars, setCars] = useState([]);
@@ -62,6 +63,7 @@ function Page() {
         Car Care Management
       </h1>
       <FuelPrices />
+      <UsageStatistics />
       <CreateCar onCarCreated={handleCarCreated} />
       <Cars cars={cars} onUpdate={handleRefresh} />
     </main>

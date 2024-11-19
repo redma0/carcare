@@ -1,0 +1,76 @@
+.statistics-container {
+    background-color: var(--white);
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: var(--shadow);
+    margin: 2rem auto;
+    max-width: 1200px;
+  }
+  
+  .statistics-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+  
+  .statistics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .statistics-card {
+    background-color: var(--gray-light);
+    padding: 1.5rem;
+    border-radius: 1rem;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  
+  .statistics-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+  }
+  
+  .statistics-card h3 {
+    font-size: 1.1rem;
+    color: var(--gray);
+    margin-bottom: 1rem;
+  }
+  
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  
+  .stat-value.cost {
+    color: var(--danger);
+  }
+  
+  .statistics-loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--gray);
+    font-size: 1.1rem;
+  }
+  
+  @media (max-width: 768px) {
+    .statistics-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .statistics-container {
+      margin: 1rem;
+      padding: 1.5rem;
+    }
+  
+    .stat-value {
+      font-size: 1.5rem;
+    }
+  }
+  
