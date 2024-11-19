@@ -1,287 +1,131 @@
-/* src/app/cars.css */
-.cars-container {
-    margin: 20px;
-  }
-  
-  .car-card {
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    padding: 20px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  
-  .car-card h3 {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #007bff;
-  }
-  
-  .car-details {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 10px;
-    margin-top: 10px;
-  }
-  
-  .car-detail-item {
-    padding: 5px;
-    background-color: #fff;
-    border-radius: 3px;
-    border: 1px solid #ddd;
-  }
-  
-  .car-detail-item p {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-    flex-wrap: wrap;
-  }
-  
-  .edit-field {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  
-  .edit-input {
-    padding: 4px 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.9rem;
-  }
-  
-  input[type="date"].edit-input {
-    min-width: 150px;
-  }
-  
-  input[type="number"].edit-input {
-    width: 100px;
-  }
-  
-  .edit-btn, 
-  .save-btn, 
-  .cancel-btn {
-    padding: 4px 8px;
-    margin-left: 8px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    white-space: nowrap;
-  }
-  
-  .edit-btn {
-    background-color: #007bff;
-    color: white;
-  }
-  
-  .save-btn {
-    background-color: #28a745;
-    color: white;
-  }
-  
-  .cancel-btn {
-    background-color: #dc3545;
-    color: white;
-  }
-  
-  .edit-btn:hover {
-    background-color: #0056b3;
-  }
-  
-  .save-btn:hover {
-    background-color: #218838;
-  }
-  
-  .cancel-btn:hover {
-    background-color: #c82333;
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 640px) {
-    .car-details {
-      grid-template-columns: 1fr;
-    }
-    
-    .edit-field {
-      margin-top: 5px;
-    }
-  }
-  /* Add these new styles to your existing CSS */
-.service-status {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  
-  .service-status.overdue {
-    background-color: #fff3f3;
-    border-color: #dc3545;
-  }
-  
-  .service-status.overdue .countdown {
-    color: #dc3545;
-    font-weight: bold;
-  }
-  
-  .service-date {
-    font-weight: bold;
-    color: #007bff;
-  }
-  
-  .countdown {
-    font-size: 0.9rem;
-    color: #28a745;
-  }
-  
-  .service-status.overdue p:first-child {
-    color: #dc3545;
-  }
-  .monthly-average {
-    font-size: 0.9rem;
-    color: #666;
-    margin-top: 4px;
-  }
-  
-  .data-period {
-    font-size: 0.8rem;
-    color: #888;
-    margin-left: 4px;
-  }
-  /* Add these to your existing CSS while keeping all previous styles */
-.monthly-usage {
-    font-size: 0.9rem;
-    color: #666;
-    margin-top: 4px;
-    padding: 4px 8px;
-    background-color: #f0f0f0;
-    border-radius: 4px;
-    display: inline-block;
-  }
-  
-  .update-date {
-    color: #888;
-    font-size: 0.8rem;
-    margin-left: 8px;
-  }
-  
-  /* Add to your existing CSS */
-.car-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  
-  .delete-car-btn {
-    background: none;
-    border: none;
-    color: #dc3545;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0 8px;
-    line-height: 1;
-  }
-  
-  .delete-car-btn:hover {
-    color: #c82333;
-  }
-  
-  .modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  
-  .modal-content {
-    background-color: white;
-    padding: 24px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    max-width: 400px;
-    width: 90%;
-  }
-  
-  .modal-content h3 {
-    margin-top: 0;
-    margin-bottom: 16px;
-    color: #dc3545;
-  }
-  
-  .modal-content p {
-    margin-bottom: 24px;
-    color: #333;
-  }
-  
-  .modal-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-  }
-  
-  .modal-buttons .delete-btn {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .modal-buttons .delete-btn:hover {
-    background-color: #c82333;
-  }
-  
-  .modal-buttons .cancel-btn {
-    background-color: #6c757d;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .modal-buttons .cancel-btn:hover {
-    background-color: #5a6268;
-  }
-  .monthly-usage {
-    color: #28a745;
-    font-weight: bold;
-  }
-  
-  .no-data {
-    color: #6c757d;
-    font-style: italic;
-  }
-  .fuel-type {
-    color: #007bff;
-    font-weight: 500;
-  }
-  .fuel-economy {
-    color: #28a745;
-    font-weight: 500;
-  }
-  .monthly-cost {
-    color: #dc3545;
-    font-weight: bold;
-    padding: 2px 6px;
-    background-color: #fff5f5;
-    border-radius: 4px;
-  }
-  
-  .no-data {
-    color: #6c757d;
-    font-style: italic;
-  }
-  
+/* Modal Styles */
+:root {
+  --success: #10b981;
+  --danger: #ef4444;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(26, 31, 54, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--white);
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+  max-width: 90%;
+  width: 400px;
+}
+
+.modal-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 1rem;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: flex-end;
+}
+
+/* Button Styles */
+.btn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.delete-btn {
+  background-color: #FF4D4F;
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: #FF7875;
+}
+
+.cancel-btn {
+  background-color: var(--primary);
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: var(--primary-dark);
+}
+
+.value-box {
+  background-color: var(--white);
+  padding: 1.25rem;
+  border-radius: 1rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s;
+}
+
+.value-box:hover {
+  transform: translateY(-2px);
+}
+
+.edit-input {
+  padding: 0.75rem;
+  border: 1px solid var(--gray);
+  border-radius: 0.5rem;
+  width: 100%;
+  background-color: var(--white);
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(4, 96, 217, 0.1);
+}
+/* Update in cars.css */
+.edit-btn {
+  background-color: var(--primary);
+  color: white;
+  padding: 0.5rem 1rem;  /* Increased padding */
+  border-radius: 999px;  /* Fully rounded corners */
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;    /* Slightly larger font */
+  font-weight: 500;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;      /* Ensure minimum width */
+  box-shadow: 0 2px 4px rgba(4, 96, 217, 0.2);  /* Subtle shadow */
+}
+
+.edit-btn:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(4, 96, 217, 0.25);
+}
+
+.edit-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(4, 96, 217, 0.2);
+}
+
+.text-success {
+  color: var(--success);
+  font-weight: 500;
+}
+
+.text-danger {
+  color: var(--danger);
+  font-weight: 500;
+}

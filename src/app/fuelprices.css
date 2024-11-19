@@ -1,67 +1,67 @@
-/* src/app/components/FuelPrices.css */
 .fuel-prices-container {
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin: 20px 0;
-  }
-  
-  .fuel-prices-title {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 20px;
-    text-align: center;
-  }
-  
+  background-color: var(--white);
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+  margin: 2rem auto;
+  max-width: 1200px;
+}
+
+.fuel-prices-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.fuel-prices-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.fuel-price-card {
+  background-color: var(--gray-light);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.fuel-price-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+.fuel-price-card h3 {
+  font-size: 1.1rem;
+  color: var(--gray);
+  margin-bottom: 1rem;
+}
+
+.price {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.last-updated {
+  text-align: right;
+  font-size: 0.875rem;
+  color: var(--gray);
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
   .fuel-prices-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 15px;
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
-  .fuel-price-card {
-    background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: 6px;
-    text-align: center;
-    transition: transform 0.2s;
+  .fuel-prices-container {
+    margin: 1rem;
+    padding: 1.5rem;
   }
-  
-  .fuel-price-card:hover {
-    transform: translateY(-2px);
-  }
-  
-  .fuel-price-card h3 {
-    font-size: 1.1rem;
-    color: #666;
-    margin-bottom: 10px;
-  }
-  
-  .price {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #28a745;
-  }
-  
-  .last-updated {
-    text-align: right;
-    font-size: 0.8rem;
-    color: #666;
-    margin-top: 10px;
-  }
-  
-  .fuel-prices-loading {
-    text-align: center;
-    padding: 20px;
-    color: #666;
-  }
-  
-  @media (max-width: 640px) {
-    .fuel-prices-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-  
+}

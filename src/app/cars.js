@@ -96,7 +96,7 @@ function Cars({ cars, onUpdate }) {
   };
 
   return (
-    <div className="cars-container">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
       {deleteConfirm && (
         <div className="modal-backdrop">
           <div className="modal-content">
@@ -121,25 +121,32 @@ function Cars({ cars, onUpdate }) {
         const serviceStatus = calculateServiceDue(car.last_serviced);
 
         return (
-          <div key={car.id} className="car-card">
-            <div className="car-card-header">
-              <h3>
-                {car.make} {car.model}
-              </h3>
-              <button
-                onClick={() => handleDeleteClick(car)}
-                className="delete-car-btn"
-              >
-                ×
-              </button>
+          <div key={car.id} className="bg-white p-4 rounded-lg shadow">
+            <div className="value-box">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-bold">
+                  {car.make} {car.model}
+                </h3>
+                <button
+                  onClick={() => handleDeleteClick(car)}
+                  className="delete-car-btn"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
-            <div className="car-details">
-              <p className="car-detail-item">Year: {car.year}</p>
+            <div className="space-y-3">
+              <div className="value-box">
+                <div className="flex flex-col">
+                  <span className="text-gray-600">Year</span>
+                  <span>{car.year}</span>
+                </div>
+              </div>
 
-              <div className="car-detail-item">
-                <p>
-                  Kilometers:{" "}
+              <div className="value-box">
+                <div className="flex flex-col">
+                  <span className="text-gray-600">Kilometers</span>
                   {editingId === car.id && editField === "kilometers" ? (
                     <span className="edit-field">
                       <input
@@ -148,19 +155,21 @@ function Cars({ cars, onUpdate }) {
                         onChange={(e) => setEditValue(e.target.value)}
                         className="edit-input"
                       />
-                      <button
-                        onClick={() => handleSave(car.id)}
-                        className="save-btn"
-                      >
-                        Save
-                      </button>
-                      <button onClick={handleCancel} className="cancel-btn">
-                        Cancel
-                      </button>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => handleSave(car.id)}
+                          className="save-btn"
+                        >
+                          Save
+                        </button>
+                        <button onClick={handleCancel} className="cancel-btn">
+                          Cancel
+                        </button>
+                      </div>
                     </span>
                   ) : (
-                    <span>
-                      {car.kilometers}{" "}
+                    <span className="flex items-center gap-2">
+                      {car.kilometers}
                       <button
                         onClick={() => handleEdit(car, "kilometers")}
                         className="edit-btn"
@@ -169,51 +178,52 @@ function Cars({ cars, onUpdate }) {
                       </button>
                     </span>
                   )}
-                </p>
-                {car.monthly_usage !== null && (
-                  <p className="monthly-usage">
-                    Average: {Math.round(car.monthly_usage)} km/month
-                  </p>
-                )}
+                  {car.monthly_usage !== null && (
+                    <span className="text-sm text-gray-500">
+                      {new Date().toLocaleString("default", { month: "long" })}:{" "}
+                      {Math.round(car.monthly_usage)} km/month
+                    </span>
+                  )}
+                </div>
               </div>
 
-              <div className="car-detail-item">
-                <p>
-                  Fuel Type:{" "}
-                  <span className="fuel-type">
+              <div className="value-box">
+                <div className="flex flex-col">
+                  <span className="text-gray-600">Fuel Type</span>
+                  <span>
                     {car.fuel_type.charAt(0).toUpperCase() +
                       car.fuel_type.slice(1)}
                   </span>
-                </p>
+                </div>
               </div>
 
-              <div className="car-detail-item">
-                <p>
-                  Fuel Economy:{" "}
-                  <span className="fuel-economy">
+              <div className="value-box">
+                <div className="flex flex-col">
+                  <span className="text-gray-600">Fuel Economy</span>
+                  <span className="text-success">
                     {car.fuel_economy} L/100km
                   </span>
-                </p>
+                </div>
               </div>
 
               {car.monthly_fuel_cost && (
-                <div className="car-detail-item">
-                  <p>
-                    Monthly Fuel Cost:{" "}
-                    <span className="monthly-cost">
+                <div className="value-box">
+                  <div className="flex flex-col">
+                    <span className="text-gray-600">Monthly Fuel Cost</span>
+                    <span className="text-danger">
                       {Number(car.monthly_fuel_cost).toLocaleString("sr-RS", {
                         style: "currency",
                         currency: "RSD",
                         maximumFractionDigits: 0,
                       })}
                     </span>
-                  </p>
+                  </div>
                 </div>
               )}
 
-              <div className="car-detail-item">
-                <p>
-                  Last Serviced:{" "}
+              <div className="value-box">
+                <div className="flex flex-col">
+                  <span className="text-gray-600">Last Serviced</span>
                   {editingId === car.id && editField === "lastServiced" ? (
                     <span className="edit-field">
                       <input
@@ -222,19 +232,21 @@ function Cars({ cars, onUpdate }) {
                         onChange={(e) => setEditValue(e.target.value)}
                         className="edit-input"
                       />
-                      <button
-                        onClick={() => handleSave(car.id)}
-                        className="save-btn"
-                      >
-                        Save
-                      </button>
-                      <button onClick={handleCancel} className="cancel-btn">
-                        Cancel
-                      </button>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => handleSave(car.id)}
+                          className="save-btn"
+                        >
+                          Save
+                        </button>
+                        <button onClick={handleCancel} className="cancel-btn">
+                          Cancel
+                        </button>
+                      </div>
                     </span>
                   ) : (
-                    <span>
-                      {new Date(car.last_serviced).toLocaleDateString()}{" "}
+                    <span className="flex items-center gap-2">
+                      {new Date(car.last_serviced).toLocaleDateString()}
                       <button
                         onClick={() => handleEdit(car, "lastServiced")}
                         className="edit-btn"
@@ -243,21 +255,23 @@ function Cars({ cars, onUpdate }) {
                       </button>
                     </span>
                   )}
-                </p>
+                </div>
               </div>
 
-              <div
-                className={`car-detail-item service-status ${
-                  serviceStatus.isOverdue ? "overdue" : ""
-                }`}
-              >
-                <p>Next Service:</p>
-                <p className="service-date">{serviceStatus.nextServiceDate}</p>
-                <p className="countdown">
-                  {serviceStatus.isOverdue
-                    ? `Overdue by ${Math.abs(serviceStatus.daysLeft)} days`
-                    : `${serviceStatus.daysLeft} days remaining`}
-                </p>
+              <div className="value-box">
+                <div
+                  className={`flex flex-col ${
+                    serviceStatus.isOverdue ? "text-red-600" : ""
+                  }`}
+                >
+                  <span className="text-gray-600">Next Service</span>
+                  <span>{serviceStatus.nextServiceDate}</span>
+                  <span className="text-sm">
+                    {serviceStatus.isOverdue
+                      ? `Overdue by ${Math.abs(serviceStatus.daysLeft)} days`
+                      : `${serviceStatus.daysLeft} days remaining`}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
