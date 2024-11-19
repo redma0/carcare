@@ -117,66 +117,77 @@ export async function GET() {
 
 export async function PUT(request) {
   try {
-    const body = await request.json();
-    const { id, kilometers, lastServiced } = body;
-
+    const { id, kilometers } = await request.json();
     const conn = await get_db_connection();
-    let updateClause = [];
-    let values = [];
-    let paramCount = 1;
 
-    if (kilometers !== undefined) {
-      updateClause.push(`
-        kilometers = $${paramCount},
-        kilometers_updated_at = CURRENT_TIMESTAMP
-      `);
-      values.push(kilometers);
-      paramCount++;
+    // First get the car's current data
+    const carResult = await conn.query(
+      `
+      SELECT fuel_type, fuel_economy
+      FROM cars
+      WHERE id = $1
+    `,
+      [id]
+    );
+
+    // Get current fuel prices
+    const fuelResult = await conn.query(`
+      SELECT price_95, price_diesel, price_lpg
+      FROM fuel_prices
+      ORDER BY timestamp DESC
+      LIMIT 1
+    `);
+
+    const car = carResult.rows[0];
+    const fuelPrices = fuelResult.rows[0];
+
+    // Get the appropriate fuel price based on fuel type
+    let fuelPrice;
+    switch (car.fuel_type.toLowerCase()) {
+      case "95":
+        fuelPrice = fuelPrices.price_95;
+        break;
+      case "diesel":
+        fuelPrice = fuelPrices.price_diesel;
+        break;
+      case "lpg":
+        fuelPrice = fuelPrices.price_lpg;
+        break;
+      default:
+        fuelPrice = fuelPrices.price_95;
     }
 
-    if (lastServiced !== undefined) {
-      updateClause.push(`last_serviced = $${paramCount}`);
-      values.push(lastServiced);
-      paramCount++;
-    }
-
-    values.push(id);
-
+    // Update car with new kilometers and calculate monthly fuel cost
     const query = `
       UPDATE cars 
-      SET ${updateClause.join(", ")}
-      WHERE id = $${paramCount}
+      SET 
+        kilometers = $1,
+        kilometers_updated_at = CURRENT_TIMESTAMP,
+        monthly_fuel_cost = (
+          ($1 - initial_kilometers)::float / 
+          GREATEST(1, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - kilometers_updated_at)) / (30 * 24 * 60 * 60))
+        ) * ($2::float / 100) * $3::float
+      WHERE id = $4
       RETURNING *,
         CASE 
           WHEN kilometers_updated_at IS NOT NULL THEN
-            CAST((kilometers - initial_kilometers)::float / 
+            (kilometers - initial_kilometers)::float / 
             GREATEST(1, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - kilometers_updated_at)) / (30 * 24 * 60 * 60))
-            AS DECIMAL(10,2))
           ELSE NULL
         END as monthly_usage;
     `;
 
-    const result = await conn.query(query, values);
+    const result = await conn.query(query, [
+      kilometers,
+      car.fuel_economy,
+      fuelPrice,
+      id,
+    ]);
+
     await conn.end();
 
     if (result.rows.length === 0) {
       return NextResponse.json({ error: "Car not found" }, { status: 404 });
-    }
-
-    // If kilometers were updated, run the calculation script
-    if (kilometers !== undefined) {
-      try {
-        // Run the Python script
-        const { stdout, stderr } = await execAsync(
-          "python3 src/app/calculate_fuel_costs.py"
-        );
-        console.log("Calculation output:", stdout);
-        if (stderr) {
-          console.error("Calculation errors:", stderr);
-        }
-      } catch (error) {
-        console.error("Failed to run calculations:", error);
-      }
     }
 
     return NextResponse.json(result.rows[0]);
@@ -188,6 +199,7 @@ export async function PUT(request) {
     );
   }
 }
+
 export async function DELETE(request) {
   try {
     const { id } = await request.json();

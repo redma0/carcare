@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
-const ModelViewer = () => {
+const ModelViewerBMW = () => {
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -165,4 +165,4 @@ const ModelViewer = () => {
   );
 };
 
-export default ModelViewer;
+export default ModelViewerBMW;
