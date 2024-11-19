@@ -8,30 +8,32 @@ import UsageStatistics from "./UsageStatistics";
 function Page() {
   const [cars, setCars] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [error, setError] = useState(null); // Add error state
 
   const fetchCars = async () => {
     try {
       const response = await fetch("/api/cars");
       if (!response.ok) {
-        throw new Error("Failed to fetch cars");
+        const errorData = await response.json();
+        throw new Error(errorData.details || "Failed to fetch cars");
       }
       const data = await response.json();
       setCars(data);
+      setError(null); // Clear any previous errors
     } catch (error) {
       console.error("Error fetching cars:", error);
+      setError(error.message);
+      setCars([]); // Reset cars on error
     }
   };
 
-  // Fetch cars data
   useEffect(() => {
     fetchCars();
 
-    // Set up interval for periodic updates (every 5 minutes)
     const intervalId = setInterval(fetchCars, 300000);
 
-    // Cleanup interval on unmount
     return () => clearInterval(intervalId);
-  }, [refreshTrigger]); // Only re-run if refreshTrigger changes
+  }, [refreshTrigger]);
 
   const handleCarCreated = async (carData) => {
     try {
@@ -44,12 +46,15 @@ function Page() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create car");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create car");
       }
 
       setRefreshTrigger((prev) => prev + 1);
+      setError(null); // Clear any previous errors
     } catch (error) {
       console.error("Error creating car:", error);
+      setError(error.message);
     }
   };
 
@@ -62,6 +67,11 @@ function Page() {
       <h1 className="text-3xl font-bold mb-8 text-black">
         Car Care Management
       </h1>
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
       <FuelPrices />
       <UsageStatistics />
       <CreateCar onCarCreated={handleCarCreated} />

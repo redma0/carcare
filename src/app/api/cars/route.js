@@ -18,6 +18,7 @@ export async function POST(request) {
       lastServiced,
       fuelType,
       fuelEconomy,
+      registrationExpires,
     } = body;
 
     const conn = await get_db_connection();
@@ -31,9 +32,10 @@ export async function POST(request) {
         kilometers_updated_at,
         initial_kilometers,
         fuel_type,
-        fuel_economy
+        fuel_economy,
+        registration_expires
       )
-      VALUES ($1, $2, $3, $4, $5, NULL, $4, $6, $7)
+      VALUES ($1, $2, $3, $4, $5, NULL, $4, $6, $7, $8)
       RETURNING *,
         CASE 
           WHEN kilometers_updated_at IS NOT NULL THEN
@@ -51,6 +53,7 @@ export async function POST(request) {
       lastServiced,
       fuelType,
       fuelEconomy,
+      registrationExpires,
     ]);
     const newCar = result.rows[0];
     await conn.end();
@@ -91,6 +94,7 @@ export async function GET() {
         fuel_type,
         fuel_economy,
         monthly_fuel_cost,
+        registration_expires,
         CASE 
           WHEN kilometers_updated_at IS NOT NULL THEN
             CAST((kilometers - initial_kilometers)::float / 
@@ -118,14 +122,15 @@ export async function GET() {
 export async function PUT(request) {
   const conn = await get_db_connection();
   try {
-    const { id, kilometers, lastServiced } = await request.json();
+    const { id, kilometers, lastServiced, registrationExpires } =
+      await request.json();
 
     // Start transaction
     await conn.query("BEGIN");
 
     // Get current car data
     const currentCarData = await conn.query(
-      `SELECT kilometers, last_serviced, fuel_type, fuel_economy 
+      `SELECT kilometers, last_serviced, registration_expires, fuel_type, fuel_economy 
        FROM cars WHERE id = $1`,
       [id]
     );
@@ -223,15 +228,56 @@ export async function PUT(request) {
         ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
         [id, "service", currentCar.last_serviced, lastServiced]
       );
+    } else if (registrationExpires) {
+      // Update registration expiration date
+      const updateResult = await conn.query(
+        `
+        UPDATE cars 
+        SET registration_expires = $1
+        WHERE id = $2
+        RETURNING *`,
+        [registrationExpires, id]
+      );
+
+      // Log registration update
+      await conn.query(
+        `
+        INSERT INTO car_updates (
+          car_id,
+          update_type,
+          previous_value,
+          new_value,
+          update_timestamp
+        ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+        [
+          id,
+          "registration",
+          currentCar.registration_expires,
+          registrationExpires,
+        ]
+      );
     }
 
     // Commit transaction
     await conn.query("COMMIT");
 
-    // Get updated car data
+    // Get updated car data with all fields including monthly usage calculation
     const result = await conn.query(
       `
-      SELECT *, 
+      SELECT 
+        id,
+        make, 
+        model,
+        year,
+        kilometers,
+        last_serviced,
+        kilometers_updated_at,
+        created_at,
+        initial_kilometers,
+        fuel_type,
+        fuel_economy,
+        monthly_fuel_cost,
+        registration_expires,
         CASE 
           WHEN kilometers_updated_at IS NOT NULL THEN
             (kilometers - initial_kilometers)::float / 

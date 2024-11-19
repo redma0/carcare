@@ -5,6 +5,7 @@ import "./usagestatistics.css";
 
 function UsageStatistics() {
   const [statistics, setStatistics] = useState(null);
+  const currentMonth = new Date().toLocaleString("default", { month: "long" });
 
   const fetchStatistics = async () => {
     try {
@@ -35,13 +36,13 @@ function UsageStatistics() {
       <h2 className="statistics-title">Usage Statistics</h2>
       <div className="statistics-grid">
         <div className="statistics-card">
-          <h3>Monthly Distance</h3>
+          <h3>{currentMonth} Distance</h3>
           <p className="stat-value">
             {Number(statistics.monthly_kilometers)?.toLocaleString()} km
           </p>
         </div>
         <div className="statistics-card">
-          <h3>Monthly Cost</h3>
+          <h3>{currentMonth} Cost</h3>
           <p className="stat-value cost">
             {Number(statistics.monthly_cost)?.toLocaleString()} RSD
           </p>

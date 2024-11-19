@@ -29,14 +29,22 @@ function Cars({ cars, onUpdate }) {
   const handleEdit = (car, field) => {
     setEditingId(car.id);
     setEditField(field);
-    setEditValue(field === "kilometers" ? car.kilometers : car.last_serviced);
+    setEditValue(
+      field === "kilometers"
+        ? car.kilometers
+        : field === "lastServiced"
+        ? car.last_serviced
+        : car.registration_expires
+    );
   };
 
   const handleSave = async (id) => {
     try {
       const updateData = {
         id: id,
-        [editField]:
+        [editField === "registrationExpires"
+          ? "registrationExpires"
+          : editField]:
           editField === "kilometers" ? parseInt(editValue) : editValue,
       };
 
@@ -94,6 +102,19 @@ function Cars({ cars, onUpdate }) {
   const handleDeleteCancel = () => {
     setDeleteConfirm(null);
   };
+  const calculateRegistrationDue = (registrationExpires) => {
+    const expiryDate = new Date(registrationExpires);
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil(
+      (expiryDate - today) / (1000 * 60 * 60 * 24)
+    );
+
+    return {
+      daysLeft: daysUntilExpiry,
+      expiryDate: expiryDate.toLocaleDateString(),
+      isExpired: daysUntilExpiry < 0,
+    };
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
@@ -119,6 +140,9 @@ function Cars({ cars, onUpdate }) {
 
       {cars.map((car) => {
         const serviceStatus = calculateServiceDue(car.last_serviced);
+        const registrationStatus = calculateRegistrationDue(
+          car.registration_expires
+        );
 
         return (
           <div key={car.id} className="bg-white p-4 rounded-lg shadow">
@@ -274,6 +298,58 @@ function Cars({ cars, onUpdate }) {
                     {serviceStatus.isOverdue
                       ? `Overdue by ${Math.abs(serviceStatus.daysLeft)} days`
                       : `${serviceStatus.daysLeft} days remaining`}
+                  </span>
+                </div>
+              </div>
+              <div className="value-box">
+                <div
+                  className={`flex flex-col ${
+                    registrationStatus.daysLeft > 90
+                      ? "text-success"
+                      : registrationStatus.daysLeft > 30
+                      ? "text-warning"
+                      : "text-danger"
+                  }`}
+                >
+                  <span className="text-gray-600">Registration Expires</span>
+                  {editingId === car.id &&
+                  editField === "registrationExpires" ? (
+                    <span className="edit-field">
+                      <input
+                        type="date"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        className="edit-input"
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => handleSave(car.id)}
+                          className="save-btn"
+                        >
+                          Save
+                        </button>
+                        <button onClick={handleCancel} className="cancel-btn">
+                          Cancel
+                        </button>
+                      </div>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      {registrationStatus.expiryDate}
+                      <button
+                        onClick={() => handleEdit(car, "registrationExpires")}
+                        className="edit-btn"
+                      >
+                        Edit
+                      </button>
+                    </span>
+                  )}
+                  <span className="text-sm">
+                    {registrationStatus.isExpired
+                      ? `Expired ${Math.abs(
+                          registrationStatus.daysLeft
+                        )} days ago`
+                      : `${registrationStatus.daysLeft} days remaining`}
                   </span>
                 </div>
               </div>

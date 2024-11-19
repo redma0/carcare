@@ -11,7 +11,8 @@ function CreateCar({ onCarCreated }) {
     kilometers: "",
     lastServiced: "",
     fuelType: "diesel",
-    fuelEconomy: "", // new field
+    fuelEconomy: "",
+    registrationExpires: "",
   });
 
   const handleSubmit = (e) => {
@@ -25,6 +26,7 @@ function CreateCar({ onCarCreated }) {
       lastServiced: "",
       fuelType: "diesel",
       fuelEconomy: "",
+      registrationExpires: "",
     });
     setIsOpen(false);
   };
@@ -76,13 +78,16 @@ function CreateCar({ onCarCreated }) {
             placeholder="Kilometers"
             required
           />
-          <input
-            type="date"
-            name="lastServiced"
-            value={formData.lastServiced}
-            onChange={handleChange}
-            required
-          />
+          <div className="form-group">
+            <label>Last Service</label>
+            <input
+              type="date"
+              name="lastServiced"
+              value={formData.lastServiced}
+              onChange={handleChange}
+              required
+            />
+          </div>
           <select
             name="fuelType"
             value={formData.fuelType}
@@ -106,6 +111,16 @@ function CreateCar({ onCarCreated }) {
               required
             />
             <span className="economy-unit">L/100km</span>
+          </div>
+          <div className="form-group">
+            <label>Registration Expiration</label>
+            <input
+              type="date"
+              name="registrationExpires"
+              value={formData.registrationExpires}
+              onChange={handleChange}
+              required
+            />
           </div>
           <button type="submit">Add Car</button>
         </form>
