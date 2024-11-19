@@ -1,0 +1,71 @@
+## Database Setup
+
+### Prerequisites
+- PostgreSQL 12 or higher
+- psql command line tool or PostgreSQL admin tool
+
+### Installation Scripts
+
+
+Environment Setup
+Create a .env.local file in your project root:
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=your_database_name
+DB_USER=your_username
+DB_PASSWORD=your_password
+
+
+To use:
+
+Save as install.sh
+Make executable:
+chmod +x install.sh
+Run:
+
+
+
+./install.sh
+
+
+```sql
+-- Create cars table
+CREATE TABLE cars (
+    id SERIAL PRIMARY KEY,
+    make VARCHAR(100) NOT NULL,
+    model VARCHAR(100) NOT NULL,
+    year INTEGER NOT NULL,
+    kilometers DECIMAL(10,2) NOT NULL,
+    initial_kilometers DECIMAL(10,2) NOT NULL,
+    last_serviced DATE,
+    kilometers_updated_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fuel_type VARCHAR(50),
+    fuel_economy DECIMAL(10,2),
+    monthly_fuel_cost DECIMAL(10,2),
+    registration_expires DATE,
+    last_oil_change DATE
+);
+
+-- Create car_updates table
+CREATE TABLE car_updates (
+    id SERIAL PRIMARY KEY,
+    car_id INTEGER REFERENCES cars(id),
+    update_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_type VARCHAR(50),
+    previous_value DECIMAL(10,2),
+    new_value DECIMAL(10,2),
+    kilometers_driven DECIMAL(10,2),
+    fuel_cost_for_update DECIMAL(10,2),
+    fuel_price_at_update DECIMAL(10,2)
+);
+
+-- Create fuel_prices table
+CREATE TABLE fuel_prices (
+    id SERIAL PRIMARY KEY,
+    price_95 DECIMAL(10,2),
+    price_diesel DECIMAL(10,2),
+    price_lpg DECIMAL(10,2),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
