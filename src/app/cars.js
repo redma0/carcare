@@ -7,6 +7,8 @@ function Cars({ cars, onUpdate }) {
   const [editField, setEditField] = useState(null);
   const [editValue, setEditValue] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [showChangelog, setShowChangelog] = useState(null);
+  const [changelog, setChangelog] = useState([]);
 
   const calculateServiceDue = (lastServicedDate) => {
     const oneYear = 365;
@@ -24,6 +26,19 @@ function Cars({ cars, onUpdate }) {
       nextServiceDate: nextService.toLocaleDateString(),
       isOverdue: daysUntilService < 0,
     };
+  };
+  const fetchChangelog = async (carId) => {
+    try {
+      const response = await fetch(`/api/cars/update?carId=${carId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch changelog");
+      }
+      const data = await response.json();
+      setChangelog(data);
+      setShowChangelog(carId);
+    } catch (error) {
+      console.error("Error fetching changelog:", error);
+    }
   };
 
   const handleEdit = (car, field) => {
@@ -174,14 +189,86 @@ function Cars({ cars, onUpdate }) {
                 <h3 className="text-lg font-bold">
                   {car.make} {car.model}
                 </h3>
-                <button
-                  onClick={() => handleDeleteClick(car)}
-                  className="delete-car-btn"
-                >
-                  ×
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => fetchChangelog(car.id)}
+                    className="changelog-btn"
+                  >
+                    History
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(car)}
+                    className="delete-car-btn"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             </div>
+            {showChangelog && (
+              <div className="modal-backdrop">
+                <div className="modal-content changelog-modal">
+                  <div className="changelog-header">
+                    <h3>Update History</h3>
+                    <button
+                      onClick={() => setShowChangelog(null)}
+                      className="close-btn"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="changelog-content">
+                    {changelog.map((update, index) => (
+                      <div key={index} className="changelog-item">
+                        <div className="changelog-date">
+                          {new Date(update.update_timestamp).toLocaleString()}
+                        </div>
+                        <div className="changelog-type">
+                          {update.update_type === "kilometers" ? (
+                            <>
+                              <p>
+                                Kilometers updated from {update.previous_value}{" "}
+                                to {update.new_value}
+                              </p>
+                              <p>
+                                Distance driven: {update.kilometers_driven} km
+                              </p>
+                              <p>Fuel cost: {update.fuel_cost} RSD</p>
+                              <p>Fuel price: {update.fuel_price} RSD/L</p>
+                            </>
+                          ) : update.update_type === "service" ? (
+                            <p>
+                              Service date updated from{" "}
+                              {new Date(
+                                update.previous_value
+                              ).toLocaleDateString()}{" "}
+                              to{" "}
+                              {new Date(update.new_value).toLocaleDateString()}
+                            </p>
+                          ) : update.update_type === "registration" ? (
+                            <p>
+                              Registration date updated from{" "}
+                              {new Date(
+                                update.previous_value
+                              ).toLocaleDateString()}{" "}
+                              to{" "}
+                              {new Date(update.new_value).toLocaleDateString()}
+                            </p>
+                          ) : update.update_type === "oil_change" ? (
+                            <p>
+                              Oil change updated from {update.previous_value} km
+                              to {update.new_value} km
+                            </p>
+                          ) : (
+                            <p>Unknown update type</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3">
               <div className="value-box">
