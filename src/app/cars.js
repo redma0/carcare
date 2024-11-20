@@ -134,6 +134,58 @@ function Cars({ cars, onUpdate }) {
       alert("Please login to save");
       return;
     }
+
+    // Get the current car
+    const currentCar = cars.find((car) => car.id === id);
+    if (!currentCar) return;
+
+    // Value validation based on field type
+    let isValid = true;
+    let errorMessage = "";
+
+    // Only do these checks if user is not admin
+    if (!user?.isAdmin) {
+      switch (editField) {
+        case "kilometers":
+          if (parseInt(editValue) <= currentCar.kilometers) {
+            isValid = false;
+            errorMessage =
+              "New kilometers value must be greater than current value";
+          }
+          break;
+        case "lastOilChange":
+          if (parseInt(editValue) < currentCar.last_oil_change) {
+            isValid = false;
+            errorMessage =
+              "New oil change value cannot be less than the previous value";
+          }
+          break;
+        case "lastServiced":
+          const newServiceDate = new Date(editValue);
+          const currentServiceDate = new Date(currentCar.last_serviced);
+          if (newServiceDate < currentServiceDate) {
+            isValid = false;
+            errorMessage =
+              "New service date cannot be earlier than the previous date";
+          }
+          break;
+        case "registrationExpires":
+          const newRegDate = new Date(editValue);
+          const currentRegDate = new Date(currentCar.registration_expires);
+          if (newRegDate < currentRegDate) {
+            isValid = false;
+            errorMessage =
+              "New registration date cannot be earlier than the current date";
+          }
+          break;
+      }
+    }
+
+    if (!isValid) {
+      alert(errorMessage);
+      return;
+    }
+
     try {
       const updateData = {
         id: id,
