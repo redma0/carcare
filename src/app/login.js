@@ -67,6 +67,7 @@ export default function Login({ onSuccess, onClose }) {
         }
 
         onSuccess();
+        window.location.reload();
       }
     } catch (error) {
       setError(error.message);

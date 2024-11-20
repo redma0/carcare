@@ -16,6 +16,8 @@ function CreateCar({ onCarCreated, isAuthenticated, user }) {
     fuelEconomy: "",
     registrationExpires: "",
     lastOilChange: "",
+    licensePlate: "",
+    vin: "",
   });
   const canAddCar = isAuthenticated && user?.isAdmin === true;
   const formatDate = (date) => {
@@ -25,6 +27,13 @@ function CreateCar({ onCarCreated, isAuthenticated, user }) {
     e.preventDefault();
     if (!isAuthenticated) {
       alert("Please login to add a car");
+      return;
+    }
+
+    // Check for duplicate VIN
+    const vinExists = await checkDuplicateVIN(formData.vin);
+    if (vinExists) {
+      alert("This VIN already exists. Please enter a unique VIN.");
       return;
     }
 
@@ -55,6 +64,8 @@ function CreateCar({ onCarCreated, isAuthenticated, user }) {
         fuelEconomy: "",
         registrationExpires: "",
         lastOilChange: "",
+        licensePlate: "",
+        vin: "",
       });
       setIsOpen(false);
     } catch (error) {
@@ -76,6 +87,20 @@ function CreateCar({ onCarCreated, isAuthenticated, user }) {
       return;
     }
     setIsOpen(!isOpen);
+  };
+
+  const checkDuplicateVIN = async (vin) => {
+    try {
+      const response = await fetch(`/api/cars?vin=${vin}`); // Adjust the endpoint as necessary
+      if (!response.ok) {
+        throw new Error("Failed to check VIN");
+      }
+      const data = await response.json();
+      return data.exists; // Assuming your API returns { exists: true/false }
+    } catch (error) {
+      console.error("Error checking VIN:", error);
+      return false; // Default to false if there's an error
+    }
   };
 
   return (
@@ -110,6 +135,17 @@ function CreateCar({ onCarCreated, isAuthenticated, user }) {
               value={formData.model}
               onChange={handleChange}
               placeholder="Model"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>License Plate</label>
+            <input
+              type="text"
+              name="licensePlate"
+              value={formData.licensePlate}
+              onChange={handleChange}
+              placeholder="License Plate"
               required
             />
           </div>
@@ -224,6 +260,17 @@ function CreateCar({ onCarCreated, isAuthenticated, user }) {
               dateFormat="dd/MM/yyyy"
               className="date-input"
               placeholderText="Select date"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>VIN Number</label>
+            <input
+              type="text"
+              name="vin"
+              value={formData.vin}
+              onChange={handleChange}
+              placeholder="Vehicle Identification Number"
               required
             />
           </div>

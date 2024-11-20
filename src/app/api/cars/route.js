@@ -1,114 +1,120 @@
 // src/app/api/cars/route.js
-// src/app/api/cars/route.js
 import { NextResponse } from "next/server";
 import { get_db_connection } from "../../config/db_config";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { data } from "autoprefixer";
 
 const execAsync = promisify(exec);
 
 export async function POST(request) {
+  const conn = await get_db_connection();
   try {
-    const body = await request.json();
-    const {
-      make,
-      model,
-      year,
-      kilometers,
-      lastServiced,
-      fuelType,
-      fuelEconomy,
-      registrationExpires,
-      lastOilChange,
-    } = body;
+    const data = await request.json();
 
-    const conn = await get_db_connection();
-    const query = `
-      INSERT INTO cars (
+    const result = await conn.query(
+      `INSERT INTO cars (
         make, 
         model, 
         year, 
         kilometers, 
-        last_serviced,
-        kilometers_updated_at,
         initial_kilometers,
+        last_serviced,
         fuel_type,
         fuel_economy,
         registration_expires,
-        last_oil_change
-      )
-      VALUES ($1, $2, $3, $4, $5, NULL, $4, $6, $7, $8, $9)
-      RETURNING *,
-        CASE 
-          WHEN kilometers_updated_at IS NOT NULL THEN
-            (kilometers - initial_kilometers)::float / 
-            GREATEST(1, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - kilometers_updated_at)) / (30 * 24 * 60 * 60))
-          ELSE NULL
-        END as monthly_usage;
-    `;
-
-    const result = await conn.query(query, [
-      make,
-      model,
-      year,
-      kilometers,
-      lastServiced,
-      fuelType,
-      fuelEconomy,
-      registrationExpires,
-      lastOilChange,
-    ]);
-    const newCar = result.rows[0];
-    await conn.end();
-
-    return NextResponse.json(
-      {
-        message: "Car created successfully",
-        car: newCar,
-      },
-      { status: 201 }
+        last_oil_change,
+        license_plate,
+        vin
+      ) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+      RETURNING *`,
+      [
+        data.make,
+        data.model,
+        data.year,
+        data.kilometers,
+        data.initial_kilometers,
+        data.lastServiced,
+        data.fuelType,
+        data.fuelEconomy,
+        data.registrationExpires,
+        data.lastOilChange,
+        data.licensePlate,
+        data.vin,
+      ]
     );
+
+    await conn.end();
+    return NextResponse.json(result.rows[0]);
   } catch (error) {
-    console.error("Error creating car:", error);
+    console.error("Error details:", error);
+    if (conn) {
+      await conn.end();
+    }
     return NextResponse.json(
-      { error: "Failed to create car" },
+      { error: `Failed to create car: ${error.message}` },
       { status: 500 }
     );
   }
 }
 
 // src/app/api/cars/route.js
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const vin = searchParams.get("vin");
 
-// src/app/api/cars/route.js
-export async function GET() {
+  // Check for duplicate VIN
+  if (vin) {
+    try {
+      const conn = await get_db_connection();
+      const result = await conn.query(
+        `SELECT COUNT(*) FROM cars WHERE vin = $1`,
+        [vin]
+      );
+
+      await conn.end();
+      return NextResponse.json({ exists: result.rows[0].count > 0 });
+    } catch (error) {
+      console.error("Database error details:", error.message);
+      return NextResponse.json(
+        { error: "Failed to check VIN", details: error.message },
+        { status: 500 }
+      );
+    }
+  }
+
+  // Existing code to fetch all cars
   try {
     const conn = await get_db_connection();
     const result = await conn.query(`
-      SELECT 
-        id,
-        make, 
-        model,
-        year,
-        kilometers,
-        last_serviced,
-        kilometers_updated_at,
-        created_at,
-        initial_kilometers,
-        fuel_type,
-        fuel_economy,
-        monthly_fuel_cost,
-        registration_expires,
-        last_oil_change,
-        CASE 
-          WHEN kilometers_updated_at IS NOT NULL THEN
-            CAST((kilometers - initial_kilometers)::float / 
-            GREATEST(1, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - kilometers_updated_at)) / (30 * 24 * 60 * 60))
-            AS DECIMAL(10,2))
-          ELSE NULL
-        END as monthly_usage
-      FROM cars 
-      ORDER BY created_at DESC
-    `);
+            SELECT 
+                id,
+                make, 
+                model,
+                year,
+                kilometers,
+                last_serviced,
+                kilometers_updated_at,
+                created_at,
+                initial_kilometers,
+                fuel_type,
+                fuel_economy,
+                monthly_fuel_cost,
+                registration_expires,
+                last_oil_change,
+                license_plate,
+                vin,
+                CASE 
+                    WHEN kilometers_updated_at IS NOT NULL THEN
+                        CAST((kilometers - initial_kilometers)::float / 
+                        GREATEST(1, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - kilometers_updated_at)) / (30 * 24 * 60 * 60))
+                        AS DECIMAL(10,2))
+                    ELSE NULL
+                END as monthly_usage
+            FROM cars 
+            ORDER BY created_at DESC
+        `);
 
     const cars = result.rows;
     await conn.end();

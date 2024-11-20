@@ -426,3 +426,9 @@
 .save-btn, .cancel-btn, .edit-input {
   transition: all 0.2s ease-in-out;
 }
+
+.text-md {
+  font-size: 0.95rem;
+  color: var(--gray);
+  margin-top: 0.25rem;
+}

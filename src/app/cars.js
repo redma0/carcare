@@ -329,11 +329,15 @@ function Cars({ cars, onUpdate }) {
           return (
             <div key={car.id} className="bg-white p-4 rounded-lg shadow">
               <div className="value-box">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-bold">
-                    {car.make} {car.model}
-                  </h3>
-                  <div className="flex gap-2">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col">
+                    <h3 className="text-lg font-bold">{car.make}</h3>
+                    <h4 className="text-md">{car.model}</h4>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-primary ml-14">
+                      {car.license_plate}
+                    </span>
                     <button
                       onClick={() => fetchChangelog(car.id)}
                       className="changelog-btn"
@@ -615,6 +619,9 @@ function Cars({ cars, onUpdate }) {
                           )} days ago`
                         : `${registrationStatus.daysLeft} days remaining`}
                     </span>
+                  </div>
+                  <div className="mt-4 text-sm text-gray-400">
+                    VIN: {car.vin}
                   </div>
                 </div>
               </div>
