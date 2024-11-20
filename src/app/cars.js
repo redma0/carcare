@@ -61,6 +61,9 @@ function Cars({ cars, onUpdate }) {
   const canEdit = () => {
     return isAuthenticated;
   };
+  const canAddRemove = () => {
+    return isAuthenticated && user?.isAdmin;
+  };
 
   const handleLogin = async (credentials) => {
     try {
@@ -273,12 +276,14 @@ function Cars({ cars, onUpdate }) {
                     >
                       History
                     </button>
-                    <button
-                      onClick={() => handleDeleteClick(car)}
-                      className="delete-car-btn"
-                    >
-                      ×
-                    </button>
+                    {canAddRemove() && (
+                      <button
+                        onClick={() => handleDeleteClick(car)}
+                        className="delete-car-btn"
+                      >
+                        ×
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

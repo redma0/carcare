@@ -6,6 +6,8 @@ export default function Login({ onSuccess, onClose }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showRegister, setShowRegister] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -70,6 +72,22 @@ export default function Login({ onSuccess, onClose }) {
         >
           Login
         </button>
+        <div className="mt-4 flex justify-between">
+          <button
+            type="button"
+            onClick={() => setShowRegister(true)}
+            className="text-blue-500"
+          >
+            Register
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowResetPassword(true)}
+            className="text-blue-500"
+          >
+            Reset Password
+          </button>
+        </div>
       </form>
     </div>
   );

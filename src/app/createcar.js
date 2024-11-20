@@ -15,6 +15,7 @@ function CreateCar({ onCarCreated, isAuthenticated }) {
     registrationExpires: "",
     lastOilChange: "",
   });
+  const canAddCar = isAuthenticated && userType === "admin";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -76,9 +77,9 @@ function CreateCar({ onCarCreated, isAuthenticated }) {
   return (
     <div className="create-car-container">
       <button
-        className={`toggle-form-btn ${!isAuthenticated ? "disabled" : ""}`}
+        className={`toggle-form-btn ${!canAddCar ? "disabled" : ""}`}
         onClick={handleToggleForm}
-        disabled={!isAuthenticated}
+        disabled={!canAddCar}
       >
         {isOpen ? "Close Form" : "Add New Car"}
       </button>
