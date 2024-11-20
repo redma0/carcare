@@ -10,7 +10,9 @@ npm install \
   pg@8.13.1 \
   @react-three/drei@9.117.2 \
   @react-three/fiber@8.17.10 \
-  three@0.170.0
+  three@0.170.0 \
+  jsonwebtoken@9.0.0 \  
+  bcryptjs@2.4.3    
 
 # Install dev dependencies
 npm install --save-dev \
