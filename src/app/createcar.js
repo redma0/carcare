@@ -1,5 +1,7 @@
 "use client";
 import React, { useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import "./createcar.css";
 
 function CreateCar({ onCarCreated, isAuthenticated, user }) {
@@ -16,7 +18,9 @@ function CreateCar({ onCarCreated, isAuthenticated, user }) {
     lastOilChange: "",
   });
   const canAddCar = isAuthenticated && user?.isAdmin === true;
-
+  const formatDate = (date) => {
+    return date ? new Date(date).toLocaleDateString("en-GB") : "";
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) {
@@ -152,11 +156,19 @@ function CreateCar({ onCarCreated, isAuthenticated, user }) {
 
           <div className="form-group">
             <label>Last Service Date</label>
-            <input
-              type="date"
-              name="lastServiced"
-              value={formData.lastServiced}
-              onChange={handleChange}
+            <DatePicker
+              selected={
+                formData.lastServiced ? new Date(formData.lastServiced) : null
+              }
+              onChange={(date) => {
+                setFormData({
+                  ...formData,
+                  lastServiced: date ? date.toISOString().split("T")[0] : "",
+                });
+              }}
+              dateFormat="dd/MM/yyyy"
+              className="date-input"
+              placeholderText="Select date"
               required
             />
           </div>
@@ -189,17 +201,29 @@ function CreateCar({ onCarCreated, isAuthenticated, user }) {
                 min="0"
                 required
               />
-              <span className="economy-unit">L/100km</span>
+              <span className="economy-unit"></span>
             </div>
           </div>
 
           <div className="form-group">
             <label>Registration Expiration Date</label>
-            <input
-              type="date"
-              name="registrationExpires"
-              value={formData.registrationExpires}
-              onChange={handleChange}
+            <DatePicker
+              selected={
+                formData.registrationExpires
+                  ? new Date(formData.registrationExpires)
+                  : null
+              }
+              onChange={(date) => {
+                setFormData({
+                  ...formData,
+                  registrationExpires: date
+                    ? date.toISOString().split("T")[0]
+                    : "",
+                });
+              }}
+              dateFormat="dd/MM/yyyy"
+              className="date-input"
+              placeholderText="Select date"
               required
             />
           </div>

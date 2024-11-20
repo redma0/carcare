@@ -19,6 +19,9 @@ function Cars({ cars, onUpdate }) {
     checkAuthStatus();
   }, []);
 
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("en-GB");
+  };
   const checkAuthStatus = async () => {
     try {
       const res = await fetch("/api/auth/status");
@@ -47,18 +50,18 @@ function Cars({ cars, onUpdate }) {
 
   const calculateServiceDue = (lastServicedDate) => {
     const oneYear = 365;
-    const lastServiced = new Date(lastServicedDate);
-    const nextService = new Date(lastServiced);
+    const lastServiced = new Date(lastServicedDate); // Keep as Date object
+    const nextService = new Date(lastServiced); // Keep as Date object
     nextService.setFullYear(nextService.getFullYear() + 1);
 
-    const today = new Date();
+    const today = new Date(); // Keep as Date object
     const daysUntilService = Math.ceil(
       (nextService - today) / (1000 * 60 * 60 * 24)
     );
 
     return {
       daysLeft: daysUntilService,
-      nextServiceDate: nextService.toLocaleDateString(),
+      nextServiceDate: formatDate(nextService), // Format only when displaying
       isOverdue: daysUntilService < 0,
     };
   };
@@ -161,8 +164,8 @@ function Cars({ cars, onUpdate }) {
           }
           break;
         case "lastServiced":
-          const newServiceDate = new Date(editValue);
-          const currentServiceDate = new Date(currentCar.last_serviced);
+          const newServiceDate = formatDate(editValue);
+          const currentServiceDate = formatDate(car.last_serviced);
           if (newServiceDate < currentServiceDate) {
             isValid = false;
             errorMessage =
@@ -170,8 +173,8 @@ function Cars({ cars, onUpdate }) {
           }
           break;
         case "registrationExpires":
-          const newRegDate = new Date(editValue);
-          const currentRegDate = new Date(currentCar.registration_expires);
+          const newRegDate = formatDate(editValue);
+          const currentRegDate = formatDate(currentCar.registration_expires);
           if (newRegDate < currentRegDate) {
             isValid = false;
             errorMessage =
@@ -268,13 +271,14 @@ function Cars({ cars, onUpdate }) {
   const calculateRegistrationDue = (registrationExpires) => {
     const expiryDate = new Date(registrationExpires);
     const today = new Date();
+
     const daysUntilExpiry = Math.ceil(
       (expiryDate - today) / (1000 * 60 * 60 * 24)
     );
 
     return {
       daysLeft: daysUntilExpiry,
-      expiryDate: expiryDate.toLocaleDateString(),
+      expiryDate: formatDate(expiryDate),
       isExpired: daysUntilExpiry < 0,
     };
   };
@@ -523,7 +527,7 @@ function Cars({ cars, onUpdate }) {
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
-                        {new Date(car.last_serviced).toLocaleDateString()}
+                        {formatDate(car.last_serviced)}
                         {isAuthenticated && (
                           <button
                             onClick={() => handleEdit(car, "lastServiced")}
@@ -655,7 +659,7 @@ function Cars({ cars, onUpdate }) {
               {changelog.map((update, index) => (
                 <div key={index} className="changelog-item">
                   <div className="changelog-date">
-                    {new Date(update.update_timestamp).toLocaleString()}
+                    {formatDate(update.update_timestamp)}
                   </div>
                   <div className="changelog-type">
                     {update.update_type === "kilometers" ? (
@@ -671,14 +675,14 @@ function Cars({ cars, onUpdate }) {
                     ) : update.update_type === "service" ? (
                       <p>
                         Service date updated from{" "}
-                        {new Date(update.previous_value).toLocaleDateString()}{" "}
-                        to {new Date(update.new_value).toLocaleDateString()}
+                        {formatDate(update.previous_value)} to{" "}
+                        {formatDate(update.new_value)}
                       </p>
                     ) : update.update_type === "registration" ? (
                       <p>
                         Registration date updated from{" "}
-                        {new Date(update.previous_value).toLocaleDateString()}{" "}
-                        to {new Date(update.new_value).toLocaleDateString()}
+                        {formatDate(update.previous_value)} to{" "}
+                        {formatDate(update.new_value)}
                       </p>
                     ) : update.update_type === "oil_change" ? (
                       <p>
