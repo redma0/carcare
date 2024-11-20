@@ -66,7 +66,10 @@ function Cars({ cars, onUpdate }) {
     return isAuthenticated;
   };
   const canAddRemove = () => {
-    return isAuthenticated && user?.isAdmin === true;
+    console.log("User state:", user);
+    const hasPermission = isAuthenticated && user?.isAdmin === true;
+    console.log("Has admin permission:", hasPermission);
+    return hasPermission;
   };
 
   const handleLogin = async (credentials) => {
@@ -135,15 +138,12 @@ function Cars({ cars, onUpdate }) {
       return;
     }
 
-    // Get the current car
     const currentCar = cars.find((car) => car.id === id);
     if (!currentCar) return;
 
-    // Value validation based on field type
     let isValid = true;
     let errorMessage = "";
 
-    // Only do these checks if user is not admin
     if (!user?.isAdmin) {
       switch (editField) {
         case "kilometers":
@@ -234,8 +234,8 @@ function Cars({ cars, onUpdate }) {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!canEdit()) {
-      alert("Please login to delete");
+    if (!canAddRemove()) {
+      alert("Only administrators can delete cars");
       return;
     }
     try {
@@ -247,14 +247,18 @@ function Cars({ cars, onUpdate }) {
         body: JSON.stringify({ id: deleteConfirm.id }),
       });
 
+      const data = await response.json(); // Make sure to await the JSON parsing
+
       if (!response.ok) {
-        throw new Error("Failed to delete car");
+        throw new Error(data.error || "Failed to delete car");
       }
 
+      console.log("Delete successful:", data.message);
       setDeleteConfirm(null);
       onUpdate();
     } catch (error) {
-      console.error("Error deleting car:", error);
+      console.error("Delete error:", error);
+      alert(`Failed to delete car: ${error.message}`);
     }
   };
 

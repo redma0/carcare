@@ -330,32 +330,50 @@ export async function PUT(request) {
   }
 }
 
-export async function DELETE(request) {
+async function DELETE(request) {
+  const conn = await get_db_connection();
   try {
     const { id } = await request.json();
-    const conn = await get_db_connection();
-    const query = `
+
+    // Start a transaction
+    await conn.query("BEGIN");
+
+    // First delete related car_updates
+    await conn.query("DELETE FROM car_updates WHERE car_id = $1", [id]);
+
+    // Then delete the car
+    const result = await conn.query(
+      `
       DELETE FROM cars 
       WHERE id = $1 
       RETURNING *;
-    `;
-
-    const result = await conn.query(query, [id]);
-    await conn.end();
+    `,
+      [id]
+    );
 
     if (result.rows.length === 0) {
+      await conn.query("ROLLBACK");
       return NextResponse.json({ error: "Car not found" }, { status: 404 });
     }
+
+    // Commit the transaction
+    await conn.query("COMMIT");
 
     return NextResponse.json(
       { message: "Car deleted successfully" },
       { status: 200 }
     );
   } catch (error) {
+    // Rollback in case of error
+    await conn.query("ROLLBACK");
     console.error("Error deleting car:", error);
     return NextResponse.json(
-      { error: "Failed to delete car" },
+      { error: "Failed to delete car: " + error.message },
       { status: 500 }
     );
+  } finally {
+    await conn.end();
   }
 }
+
+export { DELETE };
