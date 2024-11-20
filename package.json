@@ -6,12 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "create-admin": "node src/app/scripts/create_admin.js"
   },
   "dependencies": {
     "@react-three/drei": "^9.117.2",
     "@react-three/fiber": "^8.17.10",
     "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
     "jsonwebtoken": "^9.0.0",
     "next": "^15.0.3",
     "pg": "^8.13.1",
@@ -20,9 +22,9 @@
     "three": "^0.170.0"
   },
   "devDependencies": {
-    "eslint": "^8",
+    "eslint": "^8.57.1",
     "eslint-config-next": "^15.0.3",
-    "postcss": "^8",
+    "postcss": "^8.4.49",
     "tailwindcss": "^3.4.1"
   }
 }

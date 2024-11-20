@@ -1,3 +1,4 @@
+// src/app/scripts/create_admin.js
 const bcrypt = require("bcryptjs");
 const { Client } = require("pg");
 require("dotenv").config({ path: ".env.local" });
@@ -28,14 +29,12 @@ async function createAdmin() {
     );
 
     if (checkResult.rows.length > 0) {
-      // Update existing admin password
       await client.query(
         "UPDATE users SET password_hash = $1 WHERE username = $2",
         [hashedPassword, "admin"]
       );
       console.log("Admin password updated successfully");
     } else {
-      // Create new admin user
       await client.query(
         `INSERT INTO users (username, password_hash, is_admin) 
          VALUES ($1, $2, true)`,

@@ -13,6 +13,7 @@ function Cars({ cars, onUpdate }) {
   const [showChangelog, setShowChangelog] = useState(null);
   const [changelog, setChangelog] = useState([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     checkAuthStatus();
@@ -23,8 +24,11 @@ function Cars({ cars, onUpdate }) {
       const res = await fetch("/api/auth/status");
       const data = await res.json();
       setIsAuthenticated(data.isAuthenticated);
+      setUser(data.user); // Store the user data
     } catch (error) {
       console.error("Auth check failed:", error);
+      setIsAuthenticated(false);
+      setUser(null);
     }
   };
 
@@ -62,7 +66,7 @@ function Cars({ cars, onUpdate }) {
     return isAuthenticated;
   };
   const canAddRemove = () => {
-    return isAuthenticated && user?.isAdmin;
+    return isAuthenticated && user?.isAdmin === true;
   };
 
   const handleLogin = async (credentials) => {

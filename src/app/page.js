@@ -8,6 +8,7 @@ import FuelPrices from "./fuelprices";
 export default function Page() {
   const [cars, setCars] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
 
   // Add authentication check
   useEffect(() => {
@@ -19,9 +20,11 @@ export default function Page() {
       const res = await fetch("/api/auth/status");
       const data = await res.json();
       setIsAuthenticated(data.isAuthenticated);
+      setUser(data.user); //
     } catch (error) {
       console.error("Auth check failed:", error);
       setIsAuthenticated(false);
+      setUser(null);
     }
   };
 
@@ -53,12 +56,14 @@ export default function Page() {
       <CreateCar
         onCarCreated={handleCarCreated}
         isAuthenticated={isAuthenticated}
+        user={user}
       />
       <Cars
         cars={cars}
         onUpdate={fetchCars}
         isAuthenticated={isAuthenticated}
         setIsAuthenticated={setIsAuthenticated}
+        user={user}
       />
     </main>
   );

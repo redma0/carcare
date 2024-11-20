@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import "./createcar.css";
 
-function CreateCar({ onCarCreated, isAuthenticated }) {
+function CreateCar({ onCarCreated, isAuthenticated, user }) {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
     make: "",
@@ -15,7 +15,7 @@ function CreateCar({ onCarCreated, isAuthenticated }) {
     registrationExpires: "",
     lastOilChange: "",
   });
-  const canAddCar = isAuthenticated && userType === "admin";
+  const canAddCar = isAuthenticated && user?.isAdmin === true;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,8 +67,8 @@ function CreateCar({ onCarCreated, isAuthenticated }) {
   };
 
   const handleToggleForm = () => {
-    if (!isAuthenticated) {
-      alert("Please login to add a car");
+    if (!canAddCar) {
+      alert("Only administrators can add new cars");
       return;
     }
     setIsOpen(!isOpen);

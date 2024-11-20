@@ -2,11 +2,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
+    appDir: true,
     serverActions: true,
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
-      config.externals.push("child_process", "fs");
+      config.externals.push("pg", "bcryptjs", "jsonwebtoken");
     }
     return config;
   },
