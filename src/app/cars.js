@@ -16,7 +16,7 @@ function Cars({ cars, onUpdate }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [user, setUser] = useState(null);
   const [selectedCarImage, setSelectedCarImage] = useState(null);
-  const [expandedCard, setExpandedCard] = useState(null);
+  const [expandedCards, setExpandedCards] = useState({});
 
   useEffect(() => {
     checkAuthStatus();
@@ -345,7 +345,7 @@ function Cars({ cars, onUpdate }) {
           );
 
           return (
-            <div key={car.id} className="bg-white p-4 rounded-lg shadow">
+            <div key={car.id} className="car-card">
               <div className="flex justify-between items-start">
                 <div className="flex flex-col">
                   <h3 className="text-lg font-bold">{car.make}</h3>
@@ -373,15 +373,19 @@ function Cars({ cars, onUpdate }) {
               </div>
 
               <button
-                onClick={() =>
-                  setExpandedCard(expandedCard === car.id ? null : car.id)
-                }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpandedCards((prev) => ({
+                    ...prev,
+                    [car.id]: !prev[car.id],
+                  }));
+                }}
                 className="w-full mt-2 text-sm text-gray-600 hover:text-gray-800 flex items-center justify-center"
               >
-                {expandedCard === car.id ? "Show Less ▼" : "Show More ▶"}
+                {expandedCards[car.id] ? "Show Less ▼" : "Show More ▶"}
               </button>
 
-              {expandedCard === car.id && (
+              {expandedCards[car.id] && (
                 <div className="mt-4 space-y-3 border-t pt-4">
                   <div className="value-box">
                     <div className="flex flex-col">

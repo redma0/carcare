@@ -477,17 +477,28 @@
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;
   padding: 1rem;
+  background-color: var(--bg-dark);
 }
 
 .car-card {
   display: flex;
   flex-direction: column;
-  background: white;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   height: fit-content;
   position: relative;
   isolation: isolate;
+  background-color: var(--bg-dark);
+  padding: 1rem;
+}
+
+.car-card .flex.justify-between.items-start {
+  padding: 0.5rem;
+  margin: -0.5rem;
+}
+
+.car-card .font-bold.text-primary.ml-14 {
+  margin-left: 1rem;
 }
 
 .value-box {
