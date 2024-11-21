@@ -18,6 +18,8 @@ function CreateCar({ onCarCreated, isAuthenticated, user }) {
     lastOilChange: "",
     licensePlate: "",
     vin: "",
+    lastTireChange: "",
+    tireType: "summer",
   });
   const canAddCar = isAuthenticated && user?.isAdmin === true;
   const formatDate = (date) => {
@@ -66,6 +68,8 @@ function CreateCar({ onCarCreated, isAuthenticated, user }) {
         lastOilChange: "",
         licensePlate: "",
         vin: "",
+        lastTireChange: "",
+        tireType: "summer",
       });
       setIsOpen(false);
     } catch (error) {
@@ -188,6 +192,33 @@ function CreateCar({ onCarCreated, isAuthenticated, user }) {
               min="0"
               required
             />
+          </div>
+
+          <div className="form-group">
+            <label>Last Tire Change (km)</label>
+            <input
+              type="number"
+              name="lastTireChange"
+              value={formData.lastTireChange}
+              onChange={handleChange}
+              placeholder="Kilometers at Last Tire Change"
+              min="0"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Current Tire Type</label>
+            <select
+              name="tireType"
+              value={formData.tireType}
+              onChange={handleChange}
+              required
+              className="tire-select"
+            >
+              <option value="summer">Summer</option>
+              <option value="winter">Winter</option>
+            </select>
           </div>
 
           <div className="form-group">

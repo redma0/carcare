@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Login from "./login";
 import "./cars.css";
+import CarImage from "./components/CarImage";
 
 function Cars({ cars, onUpdate }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -14,10 +15,18 @@ function Cars({ cars, onUpdate }) {
   const [changelog, setChangelog] = useState([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [user, setUser] = useState(null);
+  const [selectedCarImage, setSelectedCarImage] = useState(null);
+  const [expandedCard, setExpandedCard] = useState(null);
 
   useEffect(() => {
     checkAuthStatus();
   }, []);
+
+  useEffect(() => {
+    if (showChangelog) {
+      fetchChangelog(showChangelog);
+    }
+  }, [cars]);
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("en-GB");
@@ -117,25 +126,42 @@ function Cars({ cars, onUpdate }) {
     }
   };
 
-  const handleEdit = (car, field) => {
-    if (!canEdit()) {
-      alert("Please login to edit");
+  const handleEdit = (id, field, currentValue) => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
       return;
     }
-    setEditingId(car.id);
+
+    // Only allow tire km editing for admins
+    if (
+      (field === "summerTireKm" || field === "winterTireKm") &&
+      !user?.isAdmin
+    ) {
+      alert("Only administrators can edit tire kilometers directly");
+      return;
+    }
+
+    setEditingId(id);
     setEditField(field);
-    setEditValue(
-      field === "kilometers"
-        ? car.kilometers
-        : field === "lastServiced"
-        ? car.last_serviced
-        : field === "registrationExpires"
-        ? car.registration_expires
-        : car.last_oil_change
+    setEditValue(currentValue?.toString() || "");
+  };
+
+  const checkTireSeasonWarning = (tireType) => {
+    const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-based
+    return (
+      (tireType === "summer" && currentMonth >= 10) || // October or later
+      (tireType === "winter" && currentMonth >= 3 && currentMonth < 10) // March to September
     );
   };
 
-  const handleSave = async (id) => {
+  const calculateTireKilometers = (car) => {
+    return {
+      summerKm: car.summer_tire_km || 0,
+      winterKm: car.winter_tire_km || 0,
+    };
+  };
+
+  const handleSave = async (id, field, value) => {
     if (!canEdit()) {
       alert("Please login to save");
       return;
@@ -144,63 +170,46 @@ function Cars({ cars, onUpdate }) {
     const currentCar = cars.find((car) => car.id === id);
     if (!currentCar) return;
 
-    let isValid = true;
-    let errorMessage = "";
+    try {
+      let updateData = {
+        id: id,
+      };
 
-    if (!user?.isAdmin) {
-      switch (editField) {
+      // Set the correct field in updateData
+      switch (field) {
         case "kilometers":
-          if (parseInt(editValue) <= currentCar.kilometers) {
-            isValid = false;
-            errorMessage =
-              "New kilometers value must be greater than current value";
-          }
-          break;
-        case "lastOilChange":
-          if (parseInt(editValue) < currentCar.last_oil_change) {
-            isValid = false;
-            errorMessage =
-              "New oil change value cannot be less than the previous value";
-          }
+          updateData.kilometers = parseInt(value);
           break;
         case "lastServiced":
-          const newServiceDate = formatDate(editValue);
-          const currentServiceDate = formatDate(car.last_serviced);
-          if (newServiceDate < currentServiceDate) {
-            isValid = false;
-            errorMessage =
-              "New service date cannot be earlier than the previous date";
-          }
+          updateData.lastServiced = value;
           break;
         case "registrationExpires":
-          const newRegDate = formatDate(editValue);
-          const currentRegDate = formatDate(currentCar.registration_expires);
-          if (newRegDate < currentRegDate) {
-            isValid = false;
-            errorMessage =
-              "New registration date cannot be earlier than the current date";
-          }
+          updateData.registrationExpires = value;
           break;
+        case "lastOilChange":
+          updateData.lastOilChange = parseInt(value);
+          break;
+        case "tireType":
+          updateData.tireType = value.toLowerCase();
+          break;
+        case "resetTires":
+          updateData.field = "resetTires";
+          updateData.tireType = value; // "summer" or "winter"
+          break;
+        case "summerTireKm":
+          if (!user?.isAdmin) return;
+          updateData.field = "summerTireKm";
+          updateData.value = parseInt(value);
+          break;
+        case "winterTireKm":
+          if (!user?.isAdmin) return;
+          updateData.field = "winterTireKm";
+          updateData.value = parseInt(value);
+          break;
+        default:
+          console.error("Unknown field:", field);
+          return;
       }
-    }
-
-    if (!isValid) {
-      alert(errorMessage);
-      return;
-    }
-
-    try {
-      const updateData = {
-        id: id,
-        [editField === "registrationExpires"
-          ? "registrationExpires"
-          : editField === "lastOilChange"
-          ? "lastOilChange"
-          : editField]:
-          editField === "kilometers" || editField === "lastOilChange"
-            ? parseInt(editValue)
-            : editValue,
-      };
 
       const response = await fetch("/api/cars", {
         method: "PUT",
@@ -211,14 +220,23 @@ function Cars({ cars, onUpdate }) {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to update ${editField}`);
+        throw new Error(`Failed to update ${field}`);
       }
 
+      // Reset edit state
       setEditingId(null);
       setEditField(null);
-      onUpdate();
+      setEditValue("");
+
+      // Force refresh of car data
+      await onUpdate();
+
+      // Refresh changelog if it's open
+      if (showChangelog === id) {
+        await fetchChangelog(id);
+      }
     } catch (error) {
-      console.error(`Error updating ${editField}:`, error);
+      console.error(`Error updating ${field}:`, error);
     }
   };
 
@@ -328,303 +346,555 @@ function Cars({ cars, onUpdate }) {
 
           return (
             <div key={car.id} className="bg-white p-4 rounded-lg shadow">
-              <div className="value-box">
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col">
-                    <h3 className="text-lg font-bold">{car.make}</h3>
-                    <h4 className="text-md">{car.model}</h4>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-primary ml-14">
-                      {car.license_plate}
-                    </span>
+              <div className="flex justify-between items-start">
+                <div className="flex flex-col">
+                  <h3 className="text-lg font-bold">{car.make}</h3>
+                  <h4 className="text-md">{car.model}</h4>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-primary ml-14">
+                    {car.license_plate}
+                  </span>
+                  <button
+                    onClick={() => fetchChangelog(car.id)}
+                    className="changelog-btn"
+                  >
+                    History
+                  </button>
+                  {canAddRemove() && (
                     <button
-                      onClick={() => fetchChangelog(car.id)}
-                      className="changelog-btn"
+                      onClick={() => handleDeleteClick(car)}
+                      className="delete-car-btn"
                     >
-                      History
+                      ×
                     </button>
-                    {canAddRemove() && (
-                      <button
-                        onClick={() => handleDeleteClick(car)}
-                        className="delete-car-btn"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="value-box">
-                  <div className="flex flex-col">
-                    <span className="text-gray-600">Year</span>
-                    <span>{car.year}</span>
-                  </div>
-                </div>
+              <button
+                onClick={() =>
+                  setExpandedCard(expandedCard === car.id ? null : car.id)
+                }
+                className="w-full mt-2 text-sm text-gray-600 hover:text-gray-800 flex items-center justify-center"
+              >
+                {expandedCard === car.id ? "Show Less ▼" : "Show More ▶"}
+              </button>
 
-                <div className="value-box">
-                  <div className="flex flex-col">
-                    <span className="text-gray-600">Kilometers</span>
-                    {editingId === car.id && editField === "kilometers" ? (
-                      <span className="edit-field">
-                        <input
-                          type="number"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          className="edit-input"
-                        />
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={() => handleSave(car.id)}
-                            className="save-btn"
-                          >
-                            Save
-                          </button>
-                          <button onClick={handleCancel} className="cancel-btn">
-                            Cancel
-                          </button>
-                        </div>
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        {car.kilometers}
-                        {isAuthenticated && (
-                          <button
-                            onClick={() => handleEdit(car, "kilometers")}
-                            className="edit-btn"
-                          >
-                            Edit
-                          </button>
-                        )}
-                      </span>
-                    )}
-                    {car.monthly_usage !== null && (
-                      <span className="text-sm text-gray-500">
-                        {new Date().toLocaleString("default", {
-                          month: "long",
-                        })}
-                        : {Math.round(car.monthly_usage)} km/month
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="value-box">
-                  <div className="flex flex-col">
-                    <span className="text-gray-600">Fuel Type</span>
-                    <span>
-                      {car.fuel_type.charAt(0).toUpperCase() +
-                        car.fuel_type.slice(1)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="value-box">
-                  <div className="flex flex-col">
-                    <span className="text-gray-600">Fuel Economy</span>
-                    <span className="text-success">
-                      {car.fuel_economy} L/100km
-                    </span>
-                  </div>
-                </div>
-
-                {car.monthly_fuel_cost && (
+              {expandedCard === car.id && (
+                <div className="mt-4 space-y-3 border-t pt-4">
                   <div className="value-box">
                     <div className="flex flex-col">
-                      <span className="text-gray-600">Monthly Fuel Cost</span>
-                      <span className="text-danger">
-                        {Number(car.monthly_fuel_cost).toLocaleString("sr-RS", {
-                          style: "currency",
-                          currency: "RSD",
-                          maximumFractionDigits: 0,
-                        })}
+                      <span className="text-gray-600">Year</span>
+                      <span>{car.year}</span>
+                    </div>
+                  </div>
+
+                  <div className="value-box">
+                    <div className="flex flex-col">
+                      <span className="text-gray-600">Kilometers</span>
+                      {editingId === car.id && editField === "kilometers" ? (
+                        <span className="edit-field">
+                          <input
+                            type="number"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="edit-input"
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() =>
+                                handleSave(car.id, editField, editValue)
+                              }
+                              className="save-btn"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={handleCancel}
+                              className="cancel-btn"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          {car.kilometers}
+                          {isAuthenticated && (
+                            <button
+                              onClick={() =>
+                                handleEdit(car.id, "kilometers", car.kilometers)
+                              }
+                              className="edit-btn"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </span>
+                      )}
+                      {car.monthly_usage !== null && (
+                        <span className="text-sm text-gray-500">
+                          {new Date().toLocaleString("default", {
+                            month: "long",
+                          })}
+                          : {Math.round(car.monthly_usage)} km/month
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="value-box">
+                    <div className="flex flex-col">
+                      <span className="text-gray-600">Fuel Type</span>
+                      <span>
+                        {car.fuel_type.charAt(0).toUpperCase() +
+                          car.fuel_type.slice(1)}
                       </span>
                     </div>
                   </div>
-                )}
 
-                <div className="value-box">
-                  <div
-                    className={`flex flex-col ${
-                      oilChangeStatus.kmLeft > 5000
-                        ? "text-success"
-                        : oilChangeStatus.kmLeft > 1000
-                        ? "text-warning"
-                        : "text-danger"
-                    }`}
-                  >
-                    <span className="text-gray-600">Oil Change</span>
-                    {editingId === car.id && editField === "lastOilChange" ? (
-                      <span className="edit-field">
-                        <input
-                          type="number"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          className="edit-input"
-                          placeholder="Kilometers at Oil Change"
-                        />
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={() => handleSave(car.id)}
-                            className="save-btn"
-                          >
-                            Save
-                          </button>
-                          <button onClick={handleCancel} className="cancel-btn">
-                            Cancel
-                          </button>
-                        </div>
+                  <div className="value-box">
+                    <div className="flex flex-col">
+                      <span className="text-gray-600">Fuel Economy</span>
+                      <span className="text-success">
+                        {car.fuel_economy} L/100km
                       </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        Last changed at:{" "}
-                        {car.last_oil_change
-                          ? car.last_oil_change.toLocaleString()
-                          : "0"}{" "}
-                        km
-                        {isAuthenticated && (
-                          <button
-                            onClick={() => handleEdit(car, "lastOilChange")}
-                            className="edit-btn"
-                          >
-                            Edit
-                          </button>
-                        )}
-                      </span>
-                    )}
-                    <span>
-                      Next at:{" "}
-                      {oilChangeStatus.nextOilChangeKm.toLocaleString()} km
-                    </span>
-                    <span className="text-sm">
-                      {oilChangeStatus.isOverdue
-                        ? `Overdue by ${Math.abs(oilChangeStatus.kmLeft)} km`
-                        : `${oilChangeStatus.kmLeft} km remaining`}
-                    </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="value-box">
-                  <div className="flex flex-col">
-                    <span className="text-gray-600">Last Serviced</span>
-                    {editingId === car.id && editField === "lastServiced" ? (
-                      <span className="edit-field">
-                        <input
-                          type="date"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          className="edit-input"
-                        />
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={() => handleSave(car.id)}
-                            className="save-btn"
-                          >
-                            Save
-                          </button>
-                          <button onClick={handleCancel} className="cancel-btn">
-                            Cancel
-                          </button>
-                        </div>
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        {formatDate(car.last_serviced)}
-                        {isAuthenticated && (
-                          <button
-                            onClick={() => handleEdit(car, "lastServiced")}
-                            className="edit-btn"
-                          >
-                            Edit
-                          </button>
-                        )}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="value-box">
-                  <div
-                    className={`flex flex-col ${
-                      serviceStatus.daysLeft > 90
-                        ? "text-success"
-                        : serviceStatus.daysLeft > 30
-                        ? "text-warning"
-                        : "text-danger"
-                    }`}
-                  >
-                    <span className="text-gray-600">Next Service</span>
-                    <span>{serviceStatus.nextServiceDate}</span>
-                    <span className="text-sm">
-                      {serviceStatus.isOverdue
-                        ? `Overdue by ${Math.abs(serviceStatus.daysLeft)} days`
-                        : `${serviceStatus.daysLeft} days remaining`}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="value-box">
-                  <div
-                    className={`flex flex-col ${
-                      registrationStatus.daysLeft > 90
-                        ? "text-success"
-                        : registrationStatus.daysLeft > 30
-                        ? "text-warning"
-                        : "text-danger"
-                    }`}
-                  >
-                    <span className="text-gray-600">Registration Expires</span>
-                    {editingId === car.id &&
-                    editField === "registrationExpires" ? (
-                      <span className="edit-field">
-                        <input
-                          type="date"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          className="edit-input"
-                        />
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={() => handleSave(car.id)}
-                            className="save-btn"
-                          >
-                            Save
-                          </button>
-                          <button onClick={handleCancel} className="cancel-btn">
-                            Cancel
-                          </button>
-                        </div>
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        {registrationStatus.expiryDate}
-                        {isAuthenticated && (
-                          <button
-                            onClick={() =>
-                              handleEdit(car, "registrationExpires")
+                  {car.monthly_fuel_cost && (
+                    <div className="value-box">
+                      <div className="flex flex-col">
+                        <span className="text-gray-600">Monthly Fuel Cost</span>
+                        <span className="text-danger">
+                          {Number(car.monthly_fuel_cost).toLocaleString(
+                            "sr-RS",
+                            {
+                              style: "currency",
+                              currency: "RSD",
+                              maximumFractionDigits: 0,
                             }
-                            className="edit-btn"
-                          >
-                            Edit
-                          </button>
-                        )}
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="value-box">
+                    <div
+                      className={`flex flex-col ${
+                        oilChangeStatus.kmLeft > 5000
+                          ? "text-success"
+                          : oilChangeStatus.kmLeft > 1000
+                          ? "text-warning"
+                          : "text-danger"
+                      }`}
+                    >
+                      <span className="text-gray-600">Oil Change</span>
+                      {editingId === car.id && editField === "lastOilChange" ? (
+                        <span className="edit-field">
+                          <input
+                            type="number"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="edit-input"
+                            placeholder="Kilometers at Oil Change"
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() =>
+                                handleSave(car.id, editField, editValue)
+                              }
+                              className="save-btn"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={handleCancel}
+                              className="cancel-btn"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          Last changed at:{" "}
+                          {car.last_oil_change
+                            ? car.last_oil_change.toLocaleString()
+                            : "0"}{" "}
+                          km
+                          {isAuthenticated && (
+                            <button
+                              onClick={() =>
+                                handleEdit(
+                                  car.id,
+                                  "lastOilChange",
+                                  car.last_oil_change
+                                )
+                              }
+                              className="edit-btn"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </span>
+                      )}
+                      <span>
+                        Next at:{" "}
+                        {oilChangeStatus.nextOilChangeKm.toLocaleString()} km
                       </span>
-                    )}
-                    <span className="text-sm">
-                      {registrationStatus.isExpired
-                        ? `Expired ${Math.abs(
-                            registrationStatus.daysLeft
-                          )} days ago`
-                        : `${registrationStatus.daysLeft} days remaining`}
-                    </span>
+                      <span className="text-sm">
+                        {oilChangeStatus.isOverdue
+                          ? `Overdue by ${Math.abs(oilChangeStatus.kmLeft)} km`
+                          : `${oilChangeStatus.kmLeft} km remaining`}
+                      </span>
+                    </div>
                   </div>
-                  <div className="mt-4 text-sm text-gray-400">
-                    VIN: {car.vin}
+
+                  <div className="value-box">
+                    <div className="flex flex-col">
+                      <span className="text-gray-600">Last Serviced</span>
+                      {editingId === car.id && editField === "lastServiced" ? (
+                        <span className="edit-field">
+                          <input
+                            type="date"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="edit-input"
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() =>
+                                handleSave(car.id, editField, editValue)
+                              }
+                              className="save-btn"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={handleCancel}
+                              className="cancel-btn"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          {formatDate(car.last_serviced)}
+                          {isAuthenticated && (
+                            <button
+                              onClick={() =>
+                                handleEdit(
+                                  car.id,
+                                  "lastServiced",
+                                  car.last_serviced
+                                )
+                              }
+                              className="edit-btn"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="value-box">
+                    <div
+                      className={`flex flex-col ${
+                        serviceStatus.daysLeft > 90
+                          ? "text-success"
+                          : serviceStatus.daysLeft > 30
+                          ? "text-warning"
+                          : "text-danger"
+                      }`}
+                    >
+                      <span className="text-gray-600">Next Service</span>
+                      <span>{serviceStatus.nextServiceDate}</span>
+                      <span className="text-sm">
+                        {serviceStatus.isOverdue
+                          ? `Overdue by ${Math.abs(
+                              serviceStatus.daysLeft
+                            )} days`
+                          : `${serviceStatus.daysLeft} days remaining`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="value-box">
+                    <div
+                      className={`flex flex-col ${
+                        registrationStatus.daysLeft > 90
+                          ? "text-success"
+                          : registrationStatus.daysLeft > 30
+                          ? "text-warning"
+                          : "text-danger"
+                      }`}
+                    >
+                      <span className="text-gray-600">
+                        Registration Expires
+                      </span>
+                      {editingId === car.id &&
+                      editField === "registrationExpires" ? (
+                        <span className="edit-field">
+                          <input
+                            type="date"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="edit-input"
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() =>
+                                handleSave(car.id, editField, editValue)
+                              }
+                              className="save-btn"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={handleCancel}
+                              className="cancel-btn"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          {registrationStatus.expiryDate}
+                          {isAuthenticated && (
+                            <button
+                              onClick={() =>
+                                handleEdit(
+                                  car.id,
+                                  "registrationExpires",
+                                  car.registration_expires
+                                )
+                              }
+                              className="edit-btn"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </span>
+                      )}
+                      <span className="text-sm">
+                        {registrationStatus.isExpired
+                          ? `Expired ${Math.abs(
+                              registrationStatus.daysLeft
+                            )} days ago`
+                          : `${registrationStatus.daysLeft} days remaining`}
+                      </span>
+                    </div>
+                    <div className="mt-4 text-sm text-gray-400">
+                      VIN: {car.vin}
+                    </div>
+                  </div>
+
+                  <div className="car-image-section">
+                    <button
+                      onClick={() => setSelectedCarImage(car.id)}
+                      className={`image-btn ${
+                        car.image_url ? "view-btn" : "add-btn"
+                      }`}
+                    >
+                      {car.image_url ? "View Image" : "Add Image"}
+                    </button>
+                  </div>
+
+                  <div className="value-box">
+                    <div
+                      className={`flex flex-col ${
+                        checkTireSeasonWarning(car.tire_type)
+                          ? "text-danger"
+                          : ""
+                      }`}
+                    >
+                      <span className="text-gray-600">Tire Type</span>
+                      {editingId === car.id && editField === "tireType" ? (
+                        <span className="edit-field">
+                          <select
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="edit-input"
+                          >
+                            <option value="summer">Summer</option>
+                            <option value="winter">Winter</option>
+                          </select>
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() =>
+                                handleSave(car.id, editField, editValue)
+                              }
+                              className="save-btn"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={handleCancel}
+                              className="cancel-btn"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </span>
+                      ) : (
+                        <>
+                          <span className="flex items-center gap-2">
+                            {car.tire_type
+                              ? car.tire_type.charAt(0).toUpperCase() +
+                                car.tire_type.slice(1)
+                              : "Not set"}
+                            {isAuthenticated && (
+                              <button
+                                onClick={() =>
+                                  handleEdit(car.id, "tireType", car.tire_type)
+                                }
+                                className="edit-btn"
+                              >
+                                Edit
+                              </button>
+                            )}
+                          </span>
+                          {checkTireSeasonWarning(car.tire_type) && (
+                            <span className="text-sm text-danger">
+                              Time to change to{" "}
+                              {car.tire_type === "summer" ? "winter" : "summer"}{" "}
+                              tires
+                            </span>
+                          )}
+                          <div className="text-sm mt-1">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                Summer Tires:{" "}
+                                {editingId === car.id &&
+                                editField === "summerTireKm" ? (
+                                  <input
+                                    type="number"
+                                    value={editValue}
+                                    onChange={(e) =>
+                                      setEditValue(e.target.value)
+                                    }
+                                    onBlur={() =>
+                                      handleSave(
+                                        car.id,
+                                        "summerTireKm",
+                                        editValue
+                                      )
+                                    }
+                                    onKeyPress={(e) =>
+                                      e.key === "Enter" &&
+                                      handleSave(
+                                        car.id,
+                                        "summerTireKm",
+                                        editValue
+                                      )
+                                    }
+                                    className="w-20 px-1 border rounded"
+                                  />
+                                ) : (
+                                  <span
+                                    onClick={() =>
+                                      user?.isAdmin &&
+                                      handleEdit(
+                                        car.id,
+                                        "summerTireKm",
+                                        car.summer_tire_km
+                                      )
+                                    }
+                                    className={
+                                      user?.isAdmin
+                                        ? "cursor-pointer hover:underline"
+                                        : ""
+                                    }
+                                  >
+                                    {car.summer_tire_km || 0} km
+                                  </span>
+                                )}
+                              </div>
+                              {isAuthenticated && (
+                                <button
+                                  onClick={() =>
+                                    handleSave(car.id, "resetTires", "summer")
+                                  }
+                                  className="reset-btn text-xs"
+                                >
+                                  Reset
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="flex justify-between items-center">
+                              <div>
+                                Winter Tires:{" "}
+                                {editingId === car.id &&
+                                editField === "winterTireKm" ? (
+                                  <input
+                                    type="number"
+                                    value={editValue}
+                                    onChange={(e) =>
+                                      setEditValue(e.target.value)
+                                    }
+                                    onBlur={() =>
+                                      handleSave(
+                                        car.id,
+                                        "winterTireKm",
+                                        editValue
+                                      )
+                                    }
+                                    onKeyPress={(e) =>
+                                      e.key === "Enter" &&
+                                      handleSave(
+                                        car.id,
+                                        "winterTireKm",
+                                        editValue
+                                      )
+                                    }
+                                    className="w-20 px-1 border rounded"
+                                  />
+                                ) : (
+                                  <span
+                                    onClick={() =>
+                                      user?.isAdmin &&
+                                      handleEdit(
+                                        car.id,
+                                        "winterTireKm",
+                                        car.winter_tire_km
+                                      )
+                                    }
+                                    className={
+                                      user?.isAdmin
+                                        ? "cursor-pointer hover:underline"
+                                        : ""
+                                    }
+                                  >
+                                    {car.winter_tire_km || 0} km
+                                  </span>
+                                )}
+                              </div>
+                              {isAuthenticated && (
+                                <button
+                                  onClick={() =>
+                                    handleSave(car.id, "resetTires", "winter")
+                                  }
+                                  className="reset-btn text-xs"
+                                >
+                                  Reset
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           );
         })}
@@ -696,6 +966,19 @@ function Cars({ cars, onUpdate }) {
                         Oil change updated from {update.previous_value} km to{" "}
                         {update.new_value} km
                       </p>
+                    ) : update.update_type === "tire_type" ? (
+                      <>
+                        <p>
+                          Tire type changed from{" "}
+                          {update.previous_value || "Not set"} to{" "}
+                          {update.new_value}
+                        </p>
+                        <p>
+                          Distance driven on previous tires:{" "}
+                          {update.kilometers_driven || 0} km
+                        </p>
+                        <p>Current odometer: {update.kilometers} km</p>
+                      </>
                     ) : (
                       <p>Unknown update type</p>
                     )}
@@ -705,6 +988,15 @@ function Cars({ cars, onUpdate }) {
             </div>
           </div>
         </div>
+      )}
+
+      {selectedCarImage && (
+        <CarImage
+          carId={selectedCarImage}
+          isAuthenticated={isAuthenticated}
+          isOpen={!!selectedCarImage}
+          onClose={() => setSelectedCarImage(null)}
+        />
       )}
     </div>
   );

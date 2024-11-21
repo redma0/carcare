@@ -18,7 +18,12 @@ export async function GET(request) {
         cu.new_value,
         cu.kilometers_driven,
         ROUND(cu.fuel_cost_for_update::numeric, 2) as fuel_cost,
-        ROUND(cu.fuel_price_at_update::numeric, 2) as fuel_price
+        ROUND(cu.fuel_price_at_update::numeric, 2) as fuel_price,
+        c.kilometers,
+        c.summer_tire_km,
+        c.winter_tire_km,
+        cu.kilometers_driven as tire_kilometers,
+        c.tire_type
       FROM car_updates cu
       JOIN cars c ON c.id = cu.car_id
       WHERE c.id = $1

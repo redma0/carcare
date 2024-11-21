@@ -12,36 +12,43 @@ export async function POST(request) {
   try {
     const data = await request.json();
 
+    // Calculate initial tire kilometers based on current tire type and last tire change
+    const tireType = data.tireType.toLowerCase();
+    const initialTireKm = data.lastTireChange
+      ? parseInt(data.kilometers) - parseInt(data.lastTireChange)
+      : 0;
+
+    // Set both tire types' initial values
+    const summerTireKm = tireType === "summer" ? initialTireKm : 0;
+    const winterTireKm = tireType === "winter" ? initialTireKm : 0;
+
     const result = await conn.query(
       `INSERT INTO cars (
-        make, 
-        model, 
-        year, 
-        kilometers, 
-        initial_kilometers,
-        last_serviced,
-        fuel_type,
-        fuel_economy,
-        registration_expires,
-        last_oil_change,
-        license_plate,
-        vin
+        make, model, year, kilometers, initial_kilometers,
+        last_serviced, fuel_type, fuel_economy,
+        registration_expires, last_oil_change,
+        license_plate, vin, tire_type,
+        summer_tire_km, winter_tire_km,
+        kilometers_updated_at
       ) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CURRENT_TIMESTAMP) 
       RETURNING *`,
       [
         data.make,
         data.model,
         data.year,
-        data.kilometers,
-        data.initial_kilometers,
+        parseInt(data.kilometers),
+        parseInt(data.kilometers), // initial_kilometers
         data.lastServiced,
         data.fuelType,
-        data.fuelEconomy,
+        parseFloat(data.fuelEconomy),
         data.registrationExpires,
-        data.lastOilChange,
+        parseInt(data.lastOilChange),
         data.licensePlate,
         data.vin,
+        tireType,
+        summerTireKm,
+        winterTireKm,
       ]
     );
 
@@ -88,33 +95,36 @@ export async function GET(request) {
   try {
     const conn = await get_db_connection();
     const result = await conn.query(`
-            SELECT 
-                id,
-                make, 
-                model,
-                year,
-                kilometers,
-                last_serviced,
-                kilometers_updated_at,
-                created_at,
-                initial_kilometers,
-                fuel_type,
-                fuel_economy,
-                monthly_fuel_cost,
-                registration_expires,
-                last_oil_change,
-                license_plate,
-                vin,
-                CASE 
-                    WHEN kilometers_updated_at IS NOT NULL THEN
-                        CAST((kilometers - initial_kilometers)::float / 
-                        GREATEST(1, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - kilometers_updated_at)) / (30 * 24 * 60 * 60))
-                        AS DECIMAL(10,2))
-                    ELSE NULL
-                END as monthly_usage
-            FROM cars 
-            ORDER BY created_at DESC
-        `);
+      SELECT 
+        id,
+        make, 
+        model,
+        year,
+        kilometers,
+        last_serviced,
+        kilometers_updated_at,
+        created_at,
+        initial_kilometers,
+        fuel_type,
+        fuel_economy,
+        monthly_fuel_cost,
+        registration_expires,
+        last_oil_change,
+        license_plate,
+        vin,
+        tire_type,
+        summer_tire_km,
+        winter_tire_km,
+        CASE 
+          WHEN kilometers_updated_at IS NOT NULL THEN
+            CAST((kilometers - initial_kilometers)::float / 
+            GREATEST(1, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - kilometers_updated_at)) / (30 * 24 * 60 * 60))
+            AS DECIMAL(10,2))
+          ELSE NULL
+        END as monthly_usage
+      FROM cars 
+      ORDER BY created_at DESC
+    `);
 
     const cars = result.rows;
     await conn.end();
@@ -132,15 +142,24 @@ export async function GET(request) {
 export async function PUT(request) {
   const conn = await get_db_connection();
   try {
-    const { id, kilometers, lastServiced, registrationExpires, lastOilChange } =
-      await request.json();
+    const {
+      id,
+      kilometers,
+      lastServiced,
+      registrationExpires,
+      lastOilChange,
+      tireType,
+      field,
+      value,
+    } = await request.json();
 
     // Start transaction
     await conn.query("BEGIN");
 
     // Get current car data
     const currentCarData = await conn.query(
-      `SELECT kilometers, last_serviced, registration_expires, last_oil_change, fuel_type, fuel_economy 
+      `SELECT kilometers, last_serviced, registration_expires, last_oil_change, 
+       fuel_type, fuel_economy, tire_type 
        FROM cars WHERE id = $1`,
       [id]
     );
@@ -177,19 +196,19 @@ export async function PUT(request) {
       const fuelCostForUpdate =
         (kilometersDriven / 100) * currentCar.fuel_economy * fuelPrice;
 
-      // Update car
+      // Update car kilometers and current tire type kilometers
       const updateResult = await conn.query(
-        `
-        UPDATE cars 
-        SET kilometers = $1,
-            kilometers_updated_at = CURRENT_TIMESTAMP,
-            monthly_fuel_cost = (
-              ($1 - initial_kilometers)::float / 
-              GREATEST(1, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - kilometers_updated_at)) / (30 * 24 * 60 * 60))
-            ) * ($2::float / 100) * $3::float
-        WHERE id = $4
-        RETURNING *`,
-        [kilometers, currentCar.fuel_economy, fuelPrice, id]
+        `UPDATE cars 
+         SET kilometers = $1,
+         ${currentCar.tire_type}_tire_km = COALESCE(${currentCar.tire_type}_tire_km, 0) + $2,
+         kilometers_updated_at = CURRENT_TIMESTAMP,
+         monthly_fuel_cost = (
+           ($1 - initial_kilometers)::float / 
+           GREATEST(1, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - kilometers_updated_at)) / (30 * 24 * 60 * 60))
+         ) * ($3::float / 100) * $4::float
+         WHERE id = $5
+         RETURNING *`,
+        [kilometers, kilometersDriven, currentCar.fuel_economy, fuelPrice, id]
       );
 
       // Log update in car_updates
@@ -291,13 +310,62 @@ export async function PUT(request) {
       );
     }
 
+    if (tireType) {
+      const previousTireType = currentCar.tire_type;
+
+      // Update tire type without resetting kilometers
+      await conn.query(
+        `UPDATE cars 
+         SET tire_type = $1,
+         kilometers_updated_at = CURRENT_TIMESTAMP
+         WHERE id = $2
+         RETURNING *`,
+        [tireType, id]
+      );
+
+      // Log tire type update
+      await conn.query(
+        `INSERT INTO car_updates (
+          car_id,
+          update_type,
+          previous_value,
+          new_value,
+          update_timestamp
+        ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+        [id, "tire_type", previousTireType, tireType]
+      );
+    } else if (field === "summerTireKm" || field === "winterTireKm") {
+      const tireField =
+        field === "summerTireKm" ? "summer_tire_km" : "winter_tire_km";
+
+      // Update the specified tire kilometers
+      await conn.query(
+        `UPDATE cars 
+         SET ${tireField} = $1
+         WHERE id = $2
+         RETURNING *`,
+        [value, id]
+      );
+
+      // Log tire kilometer update
+      await conn.query(
+        `INSERT INTO car_updates (
+          car_id,
+          update_type,
+          previous_value,
+          new_value,
+          update_timestamp
+        ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+        [id, field, currentCar[tireField], value]
+      );
+    }
+
     // Commit transaction
     await conn.query("COMMIT");
 
     // Get updated car data with all fields including monthly usage calculation
     const result = await conn.query(
-      `
-      SELECT 
+      `SELECT 
         id,
         make, 
         model,
@@ -311,6 +379,12 @@ export async function PUT(request) {
         fuel_economy,
         monthly_fuel_cost,
         registration_expires,
+        last_oil_change,
+        tire_type,
+        license_plate,
+        vin,
+        summer_tire_km,
+        winter_tire_km,
         CASE 
           WHEN kilometers_updated_at IS NOT NULL THEN
             (kilometers - initial_kilometers)::float / 
